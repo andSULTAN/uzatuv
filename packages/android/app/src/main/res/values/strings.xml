@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Uzatuv</string>
+
+    <!-- Bildirishnoma -->
+    <string name="notif_channel_name">Ekran uzatish</string>
+    <string name="notif_channel_desc">Ekran kompyuterga uzatilayotganda ko\'rinadigan bildirishnoma</string>
+    <string name="notif_title">Ekran uzatilmoqda</string>
+    <string name="notif_text">Uzatuv kompyuterga jonli ko\'rsatmoqda</string>
+    <string name="notif_stop">To\'xtatish</string>
+
+    <!-- Ulanish ekrani -->
+    <string name="connect_title">Kompyuterga ulanish</string>
+    <string name="connect_scan_qr">QR kodni skanlash</string>
+    <string name="connect_enter_code">Qisqa kod kiritish</string>
+    <string name="connect_code_hint">Masalan: 123-456-789</string>
+    <string name="connect_button">Ulanish</string>
+    <string name="connect_camera_denied">Kamera ruxsati berilmadi. Qisqa kod bilan ulaning yoki Sozlamalardan ruxsat bering.</string>
+    <string name="connect_invalid_qr">QR kod Uzatuv formatida emas.</string>
+
+    <!-- Holat ekrani -->
+    <string name="status_connecting">Ulanmoqda…</string>
+    <string name="status_active">Faol — uzatilmoqda</string>
+    <string name="status_reconnecting">Qayta ulanmoqda…</string>
+    <string name="status_closed">Uzildi</string>
+    <string name="status_start_share">Uzatishni boshlash</string>
+    <string name="status_stop">To\'xtatish</string>
+    <string name="status_connected_to">Ulangan: %1$s</string>
+
+    <!-- USB tethering yo'riqnomasi -->
+    <string name="usb_title">USB orqali ulash</string>
+    <string name="usb_intro">WiFi bo\'lmasa yoki tezroq/barqarorroq aloqa kerak bo\'lsa, telefonni USB kabel bilan kompyuterga ulang.</string>
+    <string name="usb_step1">1. Telefonni USB kabel bilan kompyuterga ulang.</string>
+    <string name="usb_step2">2. Sozlamalar → Ulanishlar → Modem rejimi (Hotspot) bo\'limini oching.</string>
+    <string name="usb_step3">3. \"USB modem\" (USB tethering) tugmasini yoqing.</string>
+    <string name="usb_step4">4. Kompyuterda Uzatuv dasturi telefonni avtomatik topadi (yoki QR/kod bilan ulang).</string>
+    <string name="usb_open_settings">Modem rejimi sozlamasini ochish</string>
+</resources>
