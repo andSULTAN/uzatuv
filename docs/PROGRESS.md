@@ -38,6 +38,19 @@
 
 ---
 
+## 2026-08-09 — FAZA 2 integratsiya (PM)
+
+**Bajarildi:**
+- **Haqiqiy end-to-end integratsiya testi** (`packages/desktop/test/integration.test.ts`): mustaqil test-klient (faqat `@uzatuv/protocol`dan foydalanadi, Android kabi) HAQIQIY desktop `Session` (server) bilan real TCP ustidan to'liq oqim: handshake → AES-256-GCM → server STREAM_CONFIG/START/KEYFRAME_REQUEST → klient CODEC_CONFIG + video keyframe → server `onVideo` (baytlar+config aynan). ✅ **exit 0** (`npm run test:integration`).
+- Android oqim ulanishi (`MirrorController`) ko'zdan kechirildi — STREAM_CONFIG→encoder, config→CODEC_CONFIG, KEYFRAME_REQUEST→requestKeyframe, encoder→sendVideo to'g'ri. CODEC_CONFIG JSON kaliti `csd` ikki tomonda mos ✓.
+- **Real integratsiya bug tuzatildi (Desktop `VideoRenderer`):** Android SPS/PPS(config)ni keyframe'dan alohida yuboradi; VideoRenderer avval uni e'tiborsiz qoldirardi → Annex-B rejimida dekoder IDR'ni ocholmasligi mumkin edi. Endi har keyframe oldiga saqlangan config qo'shiladi (self-contained IDR, reset/paket-yo'qolishiga chidamli).
+
+**Halol chegara:** bu test TRANSPORT qatlamini isbotlaydi (protokol/shifrlash/framing/demux — ikki mustaqil implementatsiya). Sinalmagan: (1) real ekran capture — Android qurilma kerak; (2) WebCodecs GPU dekod — Electron renderer (Chromium) + real H.264 oqim kerak; (3) Android kompilyatsiya — SDK kerak. Bularni faqat foydalanuvchi o'z mashinasida sinaydi.
+
+**Holat:** Transport end-to-end avtomatik tasdiqlandi. Keyingi — foydalanuvchi tomonda real qurilma sinovi (Desktop `npm run dev` + Android Studio APK), so'ng FAZA 3 (multi-device + USB) va FAZA 4 (adaptiv bitrate, `.exe`/APK build).
+
+---
+
 ## Shablon (keyingi yozuvlar uchun)
 
 ```

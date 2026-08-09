@@ -25,6 +25,17 @@ function codecString(codec: string): string {
   return "avc1.42E01E"; // H.264 baseline 3.1 (majburiy baza)
 }
 
+/**
+ * SPS/PPS(VPS) config NAL'larini IDR AU oldiga qo'shadi (Annex-B).
+ * Ortiqcha parametr to'plami dekoder uchun zararsiz — bu IDR'ni self-contained qiladi.
+ */
+function prependConfig(config: Uint8Array, au: Uint8Array): Uint8Array {
+  const out = new Uint8Array(config.length + au.length);
+  out.set(config, 0);
+  out.set(au, config.length);
+  return out;
+}
+
 export interface VideoRendererStats {
   /** dekodlangan kadrlar soni */
   frames: number;
@@ -41,6 +52,13 @@ export class VideoRenderer {
   private configured = false;
   private sawKeyframe = false;
   private disposed = false;
+  /**
+   * Oxirgi CODEC_CONFIG (SPS/PPS/VPS, Annex-B). Annex-B rejimida dekoder
+   * IDR'dan oldin parametr to'plamini talab qiladi; MediaCodec ularni har
+   * IDR oldiga qo'shmaydi, shuning uchun biz har keyframe oldiga qo'shamiz
+   * (reconnect/reset/paket yo'qolishiga chidamli — har keyframe o'zi-yetarli).
+   */
+  private lastConfig: Uint8Array | null = null;
 
   // FPS hisoblash
   private frames = 0;
@@ -102,20 +120,27 @@ export class VideoRenderer {
     if (this.disposed) return;
     if (!VideoRenderer.isSupported()) return;
 
+    // Yangi CODEC_CONFIG kelgan bo'lsa saqlaymiz (keyingi keyframe'larga qo'shish uchun).
+    if (chunk.config && chunk.config.length > 0) this.lastConfig = chunk.config;
+
     // Kodek o'zgargan yoki hali sozlanmagan bo'lsa — qayta sozlaymiz.
     if (!this.configured || chunk.codec !== this.currentCodec) {
-      this.configure(chunk.codec, chunk.config);
+      this.configure(chunk.codec, this.lastConfig ?? undefined);
     }
     if (!this.decoder || this.decoder.state !== "configured") return;
 
     if (chunk.isKeyframe) this.sawKeyframe = true;
     if (!this.sawKeyframe) return; // keyframe'siz delta dekodlanmaydi
 
+    // Keyframe bo'lsa — SPS/PPS(VPS) ni oldiga qo'shamiz (Annex-B, self-contained IDR).
+    const data =
+      chunk.isKeyframe && this.lastConfig ? prependConfig(this.lastConfig, chunk.data) : chunk.data;
+
     try {
       const ev = new EncodedVideoChunk({
         type: chunk.isKeyframe ? "key" : "delta",
         timestamp: Number(chunk.ptsUs),
-        data: chunk.data,
+        data,
       });
       this.decoder.decode(ev);
     } catch (err) {
