@@ -1,0 +1,28 @@
+{
+  "name": "@uzatuv/protocol",
+  "version": "1.0.0",
+  "description": "Uzatuv wire-protocol: types, framing, crypto, pairing (single source of truth)",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "commonjs",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "kotlin"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node --test dist/*.test.js",
+    "clean": "rimraf dist"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.1",
+    "rimraf": "^6.1.3",
+    "typescript": "^5.6.3"
+  }
+}

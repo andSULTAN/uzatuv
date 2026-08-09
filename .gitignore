@@ -1,0 +1,36 @@
+# Node / TS
+node_modules/
+dist/
+build/
+out/
+*.tsbuildinfo
+.npm/
+.eslintcache
+
+# Electron build
+packages/desktop/release/
+packages/desktop/dist-electron/
+
+# Android / Gradle
+packages/android/.gradle/
+packages/android/build/
+packages/android/app/build/
+packages/android/local.properties
+packages/android/.idea/
+packages/android/captures/
+*.apk
+*.aab
+*.keystore
+*.jks
+
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Logs / env
+*.log
+.env
+.env.local
