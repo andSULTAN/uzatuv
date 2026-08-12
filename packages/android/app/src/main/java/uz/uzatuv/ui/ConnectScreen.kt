@@ -24,6 +24,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,6 +36,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import uz.uzatuv.DeviceDiscovery
+import uz.uzatuv.DiscoveredPc
 import uz.uzatuv.Pairing
 import uz.uzatuv.PairingInfo
 
@@ -84,6 +87,27 @@ fun ConnectScreen(
             .onFailure { error = it.message ?: "Ulanish ma'lumoti noto'g'ri" }
     }
 
+    // mDNS orqali topilgan PC'lar (serverId → joriy IP/port). Ekran ochilganда ishlaydi.
+    var discovered by remember { mutableStateOf<Map<String, DiscoveredPc>>(emptyMap()) }
+    DisposableEffect(Unit) {
+        val discovery = DeviceDiscovery(context)
+        discovery.start { pc ->
+            if (pc.serverId.isNotEmpty()) discovered = discovered + (pc.serverId to pc)
+        }
+        onDispose { discovery.stop() }
+    }
+
+    // Saqlangan qurilmaga ulanish — mDNS topsa JORIY IP bilan (IP o'zgargan bo'lsa ham).
+    fun connectSaved(d: PairingInfo) {
+        val fresh = discovered[d.serverId]
+        val target = if (fresh != null && fresh.host.isNotEmpty()) {
+            d.copy(ip = fresh.host, port = fresh.port)
+        } else {
+            d // topilmadi — saqlangan IP bilan urinamiz
+        }
+        onConnectSaved(target)
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -101,7 +125,8 @@ fun ConnectScreen(
         if (!scanning && savedDevices.isNotEmpty()) {
             SavedDevicesList(
                 devices = savedDevices,
-                onConnect = onConnectSaved,
+                onlineIds = discovered.keys,
+                onConnect = { connectSaved(it) },
                 onForget = onForgetSaved,
             )
             Spacer(Modifier.padding(6.dp))
@@ -167,6 +192,7 @@ fun ConnectScreen(
 @Composable
 private fun SavedDevicesList(
     devices: List<PairingInfo>,
+    onlineIds: Set<String>,
     onConnect: (PairingInfo) -> Unit,
     onForget: (PairingInfo) -> Unit,
 ) {
@@ -179,6 +205,7 @@ private fun SavedDevicesList(
             style = androidx.compose.material3.MaterialTheme.typography.titleSmall,
         )
         devices.forEach { d ->
+            val online = d.serverId.isNotEmpty() && onlineIds.contains(d.serverId)
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -195,8 +222,14 @@ private fun SavedDevicesList(
                             style = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
                         )
                         Text(
-                            text = "${d.ip}:${d.port}",
+                            text = if (online) "● Tarmoqда — ulanishga tayyor"
+                            else "${d.ip}:${d.port}",
                             style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                            color = if (online) {
+                                androidx.compose.ui.graphics.Color(0xFF2ECC71)
+                            } else {
+                                androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
+                            },
                         )
                     }
                     TextButton(onClick = { onForget(d) }) { Text("Unut") }

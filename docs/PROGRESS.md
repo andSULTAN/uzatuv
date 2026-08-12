@@ -135,6 +135,21 @@
 
 ---
 
+## 2026-08-12 — mDNS avtomatik topish (PM)
+
+**Talab:** saqlangan qurilma IP'si o'zgarsa (DHCP) ham ulanaversin — serverId bo'yicha joriy IP'ni topish.
+
+**Bajarildi:**
+- **Android `DeviceDiscovery`** (`NsdManager`): `_uzatuv._tcp` xizmatlarini topadi, resolve navbati + MulticastLock bilan (ishonchli mDNS). Har PC uchun `DiscoveredPc{serverId, name, host(joriy IPv4), port}`.
+- **`ConnectScreen`:** ochilганда `DisposableEffect` bilan topishni ishga tushiradi; saqlangan qurilma tarmoqда topilsa "● Tarmoqда — ulanishga tayyor" (yashil) ko'rsatiladi va bosilganда **JORIY IP** bilan ulanadi (`pairing.copy(ip=fresh.host, port=fresh.port)`); topilmasa saqlangan IP bilan urinadi.
+- **Desktop:** allaqachon `bonjour-service` bilan `_uzatuv._tcp` e'lon qiladi (TXT: v, id=serverId, name). **Tekshirildi:** portable EXE ishga tushirilib, Node mDNS browse bilan topildi — `id` doimiy serverId (d2ebe33d…) bilan mos.
+
+**Natija:** saqlangan qurilma IP o'zgarsa ham ishlaydi. `sessionKey` mDNS'да YO'Q (sir) — u faqat saqlangan pairing'да; discovery faqat IP'ni yangilaydi.
+
+**Build:** APK BUILD SUCCESSFUL. Desktop o'zgarmadi (avvalgi build amal qiladi).
+
+---
+
 ## Shablon (keyingi yozuvlar uchun)
 
 ```
