@@ -20,6 +20,18 @@ export const IPC = {
   REQUEST_KEYFRAME: "uzatuv:request-keyframe",
   /** renderer → main: qurilma bitrate'ini o'zgartirish */
   SET_BITRATE: "uzatuv:set-bitrate",
+
+  // ---- UZATISH rejimi (bu PC boshqa qabul qiluvchiga ekran uzatadi) ----
+  /** renderer → main (invoke): uzatishni boshlash — qabul qiluvchi uzatuv:// havolasi */
+  TRANSMIT_START: "uzatuv:transmit-start",
+  /** renderer → main: uzatishni to'xtatish */
+  TRANSMIT_STOP: "uzatuv:transmit-stop",
+  /** renderer → main: encode qilingan video kadr (Annex-B) */
+  TRANSMIT_CHUNK: "uzatuv:transmit-chunk",
+  /** main → renderer: uzatish ulanish holati (ConnState) */
+  TRANSMIT_STATE: "uzatuv:transmit-state",
+  /** main → renderer: qabul qiluvchining control xabari (STREAM_CONFIG/KEYFRAME_REQUEST/SET_BITRATE) */
+  TRANSMIT_CONTROL: "uzatuv:transmit-control",
 } as const;
 
 /** Bitta ulanish nuqtasi (WiFi yoki USB tethering interfeysi). */
@@ -68,4 +80,22 @@ export interface VideoChunkIpc {
   config: ArrayBuffer | null;
   /** encode qilingan access unit (Annex-B) */
   data: ArrayBuffer;
+}
+
+/** UZATISH: renderer'дан main'ga encode qilingan video kadr. */
+export interface TransmitChunkIpc {
+  /** Annex-B access unit */
+  data: ArrayBuffer;
+  /** presentation timestamp (µs) — string (BigInt IPC muammosidan qochish) */
+  ptsUs: string;
+  isKeyframe: boolean;
+}
+
+/** UZATISH: boshlash natijasi (havola to'g'rimi). */
+export interface TransmitStartResult {
+  ok: boolean;
+  /** qabul qiluvchi nomi (muvaffaqiyatли bo'lsa) */
+  name?: string;
+  /** xato sababi (ok=false bo'lsa) */
+  error?: string;
 }

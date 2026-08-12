@@ -150,6 +150,21 @@
 
 ---
 
+## 2026-08-12 — Ikki tomonlama, 1-bosqich: Desktop UZATISH (PM)
+
+**Talab:** ikkala platforma ham uzatish, ham qabul qilish; audio (yoqish/o'chirish); UI mukammal + ui-reviewer tekshiradi.
+
+**1-bosqich bajarildi (Desktop ikki tomonlama):**
+- **`ClientSession`** (main) — desktop UZATISH transporti (klient): boshqa qabul qiluvchiga ulanadi, handshake (klient) + AES-256-GCM, video yuboradi, reconnect+ping. **Loopback test** (`test/transmit.test.ts`): ClientSession → SessionManager qabul qildi (baytlar aynan) — desktop ham uzata, ham qabul qila oladi. ✅ exit 0.
+- **`ScreenTransmitter`** (renderer) — `getDisplayMedia` + WebCodecs `VideoEncoder` (H.264, realtime, Annex-B) → encode → IPC → main.
+- **UI:** `HomeScreen` (rejim menyusi: Qabul qilish / Uzatish), `TransmitScreen` (havola joylash → ekran tanlash → uzatish, preview, holat, To'xtatish, ovoz-toggle placeholder). `App.tsx` marshrutlash. Qabul qiluvchi doim tinglaydi (fonда).
+- IPC: TRANSMIT_START/STOP/CHUNK/STATE/CONTROL.
+- Desktop typecheck + 6 test + build — hammasi exit 0.
+
+**Keyingi:** 2-bosqich — Android QABUL QILISH (MediaCodec dekoder + server + rejim menyusi + Android TV leanback). 3-bosqich — audio (kanal 2). So'ng ui-reviewer.
+
+---
+
 ## Shablon (keyingi yozuvlar uchun)
 
 ```
