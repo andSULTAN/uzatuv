@@ -53,6 +53,10 @@ class MainActivity : ComponentActivity() {
         val ui by MirrorState.state.collectAsState()
         var route by remember { mutableStateOf(Route.CONNECT) }
         var pending by remember { mutableStateOf<PairingInfo?>(null) }
+        // Joriy ulanish (eslab qolish taklifi uchun) + saqlangan qurilmalar ro'yxati
+        var current by remember { mutableStateOf<PairingInfo?>(null) }
+        var saved by remember { mutableStateOf(SavedDevices.list(this)) }
+        var rememberDismissed by remember { mutableStateOf(false) }
 
         // MediaProjection ruxsat natijasi → service'ni foreground'da boshlaymiz
         val projectionLauncher = rememberLauncherForActivityResult(
@@ -80,6 +84,8 @@ class MainActivity : ComponentActivity() {
         ) { _ -> launchProjection() }
 
         fun beginStart(p: PairingInfo) {
+            current = p
+            rememberDismissed = false
             pending = p
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
                 ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) !=
@@ -92,16 +98,30 @@ class MainActivity : ComponentActivity() {
         }
 
         when {
-            ui.active -> StatusScreen(
-                ui = ui,
-                onStop = { startService(MediaProjectionService.stopIntent(this)) },
-            )
+            ui.active -> {
+                val cur = current
+                val offer = cur != null && ui.conn == ConnState.READY &&
+                    !rememberDismissed && cur.serverId.isNotEmpty() &&
+                    saved.none { it.serverId == cur.serverId }
+                StatusScreen(
+                    ui = ui,
+                    onStop = { startService(MediaProjectionService.stopIntent(this)) },
+                    showRememberOffer = offer,
+                    onRemember = {
+                        cur?.let { SavedDevices.save(this, it); saved = SavedDevices.list(this) }
+                    },
+                    onDismissRemember = { rememberDismissed = true },
+                )
+            }
 
             route == Route.USB -> UsbTetherScreen(onBack = { route = Route.CONNECT })
 
             else -> ConnectScreen(
                 onPaired = { beginStart(it) },
                 onOpenUsb = { route = Route.USB },
+                savedDevices = saved,
+                onConnectSaved = { beginStart(it) },
+                onForgetSaved = { SavedDevices.remove(this, it.serverId); saved = SavedDevices.list(this) },
             )
         }
     }

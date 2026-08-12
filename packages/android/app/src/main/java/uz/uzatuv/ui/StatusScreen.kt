@@ -3,17 +3,21 @@ package uz.uzatuv.ui
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,6 +34,10 @@ import uz.uzatuv.MirrorState
 fun StatusScreen(
     ui: MirrorState.UiState,
     onStop: () -> Unit,
+    /** "Bu kompyuterni eslab qolaymi?" taklifini ko'rsatish. */
+    showRememberOffer: Boolean = false,
+    onRemember: () -> Unit = {},
+    onDismissRemember: () -> Unit = {},
 ) {
     val (label, color) = when (ui.conn) {
         ConnState.CONNECTING -> "Ulanmoqda…" to Color(0xFFF5A623)
@@ -59,7 +67,34 @@ fun StatusScreen(
             )
         }
 
-        Spacer(Modifier.padding(32.dp))
+        // "Bu kompyuterni eslab qolaymi?" taklifi (faqat birinchi ulanишда, saqlanmagan bo'lsa)
+        if (showRememberOffer) {
+            Spacer(Modifier.padding(20.dp))
+            Card(modifier = Modifier.fillMaxWidth().widthIn(max = 420.dp).padding(4.dp)) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(
+                        text = "Bu kompyuterni eslab qolaymi?",
+                        style = MaterialTheme.typography.titleMedium,
+                        textAlign = TextAlign.Center,
+                    )
+                    Text(
+                        text = "Keyingi safar QR skanlashsiz, ro'yxatdan tanlab ulanasiz.",
+                        style = MaterialTheme.typography.bodySmall,
+                        textAlign = TextAlign.Center,
+                    )
+                    Spacer(Modifier.padding(6.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        TextButton(onClick = onDismissRemember) { Text("Yo'q") }
+                        Button(onClick = onRemember) { Text("Ha, eslab qol") }
+                    }
+                }
+            }
+        }
+
+        Spacer(Modifier.padding(24.dp))
         Button(
             onClick = onStop,
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE74C3C)),

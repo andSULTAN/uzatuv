@@ -119,6 +119,22 @@
 
 ---
 
+## 2026-08-12 — "Qurilmani eslab qolish" funksiyasi (PM)
+
+**Talab:** har safar QR skanlashsiz, bir marta ulangan PC'ni eslab qolib, ro'yxatdan tanlab to'g'ridan ulanish.
+
+**Bajarildi:**
+- **Desktop identity doimiy saqlash:** `SessionManager` konstruktori endi `identity?{serverId,sessionKey}` qabul qiladi; `main/index.ts` uni `userData/uzatuv-identity.json` ga yozib/o'qiydi. Avval har ishga tushishда yangi sessionKey yaratilardi → saqlangan kalit mos kelmasdi. **Tekshirildi:** portable EXE ikki marta ishga tushirildi — serverId+sessionKey o'zgarmadi (`%APPDATA%/@uzatuv/desktop/uzatuv-identity.json`).
+- **Android `SavedDevices`:** pairing ro'yxati SharedPreferences'da JSON (serverId noyob kalit). `list/save/remove/isSaved`.
+- **Taklif:** `StatusScreen` — ulangач (READY) va saqlanmagan bo'lsa "Bu kompyuterni eslab qolaymi? [Ha/Yo'q]" kartasi.
+- **Ro'yxat:** `ConnectScreen` asosiy ekranда "Saqlangan qurilmalar" — bosilsa QR'siz to'g'ridan ulanadi ("Unut" bilan o'chiriladi).
+- `MainActivity` hammasini bog'ladi (`current` pairing, `saved` ro'yxat, taklif holati).
+- Build: desktop typecheck+5 test exit 0; APK BUILD SUCCESSFUL; ikkala EXE qayta yig'ildi.
+
+**Eslatma:** saqlangan `ip` PC IP'si o'zgarsa eskirishi mumkin (DHCP) — hozircha IP bo'yicha ulanadi; kelajakda mDNS orqali serverId bo'yicha avto-topish (keyingi ish).
+
+---
+
 ## Shablon (keyingi yozuvlar uchun)
 
 ```

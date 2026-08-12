@@ -47,11 +47,26 @@ export class SessionManager {
   private readonly sessionCbs: SessionCb[] = [];
   private readonly changeCbs: ChangeCb[] = [];
 
-  private sessionKey = generateSessionKey();
-  private readonly serverId = randomUUID();
+  private readonly sessionKey: Uint8Array;
+  private readonly serverId: string;
   private readonly serverName = os.hostname() || "PC-Uzatuv";
   private readonly shortCode = randomDigits(9);
   private advertiser: Advertiser | null = null;
+
+  /**
+   * @param identity — doimiy saqlangan server identligi (serverId + sessionKey).
+   *   Berilmasa yangi yaratiladi. Doimiy bo'lishi "qurilmani eslab qolish" uchun
+   *   zarur: telefon saqlagan sessionKey PC qayta ishga tushganda ham mos kelsin.
+   */
+  constructor(identity?: { serverId?: string; sessionKey?: Uint8Array }) {
+    this.serverId = identity?.serverId ?? randomUUID();
+    this.sessionKey = identity?.sessionKey ?? generateSessionKey();
+  }
+
+  /** Doimiy saqlash uchun joriy identity (main process faylga yozadi). */
+  getIdentity(): { serverId: string; sessionKey: Uint8Array } {
+    return { serverId: this.serverId, sessionKey: this.sessionKey };
+  }
 
   private port = DEFAULT_PORT;
   private pairing: PairingInfo | null = null;

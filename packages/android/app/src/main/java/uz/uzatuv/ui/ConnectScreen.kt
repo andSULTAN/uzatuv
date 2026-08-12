@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -21,6 +22,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,6 +50,10 @@ private enum class Mode { QR, CODE }
 fun ConnectScreen(
     onPaired: (PairingInfo) -> Unit,
     onOpenUsb: () -> Unit,
+    /** Eslab qolingan kompyuterlar — ro'yxatdan tanlab QR'siz ulanish. */
+    savedDevices: List<PairingInfo> = emptyList(),
+    onConnectSaved: (PairingInfo) -> Unit = {},
+    onForgetSaved: (PairingInfo) -> Unit = {},
 ) {
     val context = LocalContext.current
     var mode by remember { mutableStateOf(Mode.QR) }
@@ -90,6 +96,22 @@ fun ConnectScreen(
             style = androidx.compose.material3.MaterialTheme.typography.headlineSmall,
         )
         Spacer(Modifier.padding(8.dp))
+
+        // Saqlangan qurilmalar — QR'siz to'g'ridan ulanish (faqat asosiy ekranда)
+        if (!scanning && savedDevices.isNotEmpty()) {
+            SavedDevicesList(
+                devices = savedDevices,
+                onConnect = onConnectSaved,
+                onForget = onForgetSaved,
+            )
+            Spacer(Modifier.padding(6.dp))
+            Text(
+                text = "— yoki yangi qurilma ulash —",
+                style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.padding(6.dp))
+        }
 
         // Rejim tanlash (QR / Kod)
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -138,6 +160,48 @@ fun ConnectScreen(
         Spacer(Modifier.padding(16.dp))
         OutlinedButton(onClick = onOpenUsb, modifier = Modifier.widthIn(min = 220.dp)) {
             Text("USB orqali ulash yo'riqnomasi")
+        }
+    }
+}
+
+@Composable
+private fun SavedDevicesList(
+    devices: List<PairingInfo>,
+    onConnect: (PairingInfo) -> Unit,
+    onForget: (PairingInfo) -> Unit,
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth().widthIn(max = 480.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(
+            text = "Saqlangan qurilmalar",
+            style = androidx.compose.material3.MaterialTheme.typography.titleSmall,
+        )
+        devices.forEach { d ->
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onConnect(d) },
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Column(modifier = Modifier.padding(end = 8.dp)) {
+                        Text(
+                            text = d.name.ifBlank { "Kompyuter" },
+                            style = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
+                        )
+                        Text(
+                            text = "${d.ip}:${d.port}",
+                            style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                    TextButton(onClick = { onForget(d) }) { Text("Unut") }
+                }
+            }
         }
     }
 }

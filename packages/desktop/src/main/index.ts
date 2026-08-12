@@ -5,13 +5,48 @@
 
 import { app, BrowserWindow, ipcMain } from "electron";
 import { join } from "node:path";
+import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { randomUUID } from "node:crypto";
+import { generateSessionKey } from "@uzatuv/protocol";
 import { SessionManager } from "./SessionManager";
 import type { Session, VideoChunk } from "./Session";
 import { IPC } from "../shared/ipc";
 import type { SessionView, VideoChunkIpc } from "../shared/ipc";
 
 let mainWindow: BrowserWindow | null = null;
-const manager = new SessionManager();
+let manager: SessionManager;
+
+/**
+ * Server identligini (serverId + sessionKey) userData faylidan o'qiydi yoki
+ * yangi yaratib saqlaydi. Doimiy bo'lishi "qurilmani eslab qolish" uchun zarur:
+ * telefon saqlagan sessionKey PC qayta ishga tushganda ham amal qilsin.
+ */
+function loadOrCreateIdentity(): { serverId: string; sessionKey: Uint8Array } {
+  const file = join(app.getPath("userData"), "uzatuv-identity.json");
+  try {
+    if (existsSync(file)) {
+      const j = JSON.parse(readFileSync(file, "utf8")) as { serverId?: string; sessionKey?: string };
+      if (j.serverId && j.sessionKey) {
+        return { serverId: j.serverId, sessionKey: new Uint8Array(Buffer.from(j.sessionKey, "base64")) };
+      }
+    }
+  } catch (err) {
+    console.warn(`[uzatuv] identity o'qilmadi: ${(err as Error).message}`);
+  }
+  const identity = { serverId: randomUUID(), sessionKey: generateSessionKey() };
+  try {
+    writeFileSync(
+      file,
+      JSON.stringify({
+        serverId: identity.serverId,
+        sessionKey: Buffer.from(identity.sessionKey).toString("base64"),
+      }),
+    );
+  } catch (err) {
+    console.warn(`[uzatuv] identity saqlanmadi: ${(err as Error).message}`);
+  }
+  return identity;
+}
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -99,6 +134,7 @@ function wireIpc(): void {
 
 app.whenReady().then(async () => {
   createWindow();
+  manager = new SessionManager(loadOrCreateIdentity());
   wireIpc();
 
   try {
@@ -119,8 +155,8 @@ app.whenReady().then(async () => {
 });
 
 app.on("window-all-closed", () => {
-  manager.stop();
+  manager?.stop();
   if (process.platform !== "darwin") app.quit();
 });
 
-app.on("before-quit", () => manager.stop());
+app.on("before-quit", () => manager?.stop());
