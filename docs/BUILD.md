@@ -52,8 +52,9 @@ cd packages/desktop && npm run dev
 **Talab:** **Android Studio** (JDK 17 o'zida bor) yoki JDK 17 + Android SDK.
 `minSdk 26` (Android 8.0+), `targetSdk 35`, `applicationId uz.uzatuv`.
 
-> ℹ️ APK bu repo qurilgan muhitda **build qilinmagan** (Android SDK/JDK 17 yo'q edi).
-> Quyidagi qadamlar to'g'ri va standart — Android Studio'da ishlaydi.
+> ✅ **APK build qilindi va tekshirildi** (CLI toolchain: JDK 17 + Android SDK
+> platform-35 + build-tools 35 + Gradle 8.11.1). Natija: `app-debug.apk` (~41 MB),
+> package `uz.uzatuv`, minSdk 26 / targetSdk 35, `mediaProjection` FGS ruxsati bilan.
 
 ### 2.1 Android Studio orqali (eng oson)
 1. Android Studio'ni oching → **Open** → `packages/android` papkasini tanlang.
@@ -73,6 +74,25 @@ gradle wrapper            # bir marta — wrapper jar yaratadi
 
 Release (imzolangan) APK uchun `app/build.gradle.kts` da `signingConfigs`
 qo'shib, `./gradlew :app:assembleRelease` ishlating.
+
+### 2.3 CLI toolchain (Android Studio'siz — shu mashinada o'rnatilgan)
+
+Bu loyihada APK **Android Studio'siz**, `D:\Android` ga o'rnatilgan vositalar
+bilan yasaldi:
+- JDK 17: `D:\Android\jdk17\jdk-17.0.20+8`
+- Android SDK: `D:\Android\sdk` (platform-35, build-tools 35.0.0, platform-tools)
+- Gradle 8.11.1: `D:\Android\gradle\gradle-8.11.1`
+- `packages/android/local.properties` → `sdk.dir=D:/Android/sdk`
+
+Qayta build (Git Bash yoki PowerShell'da JAVA_HOME + ANDROID_HOME bilan):
+```bash
+export JAVA_HOME='/d/Android/jdk17/jdk-17.0.20+8'
+export ANDROID_HOME='/d/Android/sdk'
+export PATH="$JAVA_HOME/bin:$PATH"
+cd packages/android
+/d/Android/gradle/gradle-8.11.1/bin/gradle :app:assembleDebug --console=plain
+# → app/build/outputs/apk/debug/app-debug.apk
+```
 
 ---
 

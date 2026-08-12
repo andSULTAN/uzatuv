@@ -92,6 +92,18 @@
 
 ---
 
+## 2026-08-12 — APK build (PM)
+
+**Bajarildi:**
+- Bu mashinaga Android CLI toolchain o'rnatildi (`D:\Android`): JDK 17 (Temurin), Android SDK platform-35 + build-tools 35.0.0 + platform-tools, Gradle 8.11.1. Litsenziyalar qabul qilindi. `packages/android/local.properties` yaratildi.
+- **`gradle :app:assembleDebug` ishga tushirildi — real kompilyatsiya bug topdi:** `Pairing.kt` da `import uz.uzatuv.protocol.Proto` yetishmasdi (8 ta "Unresolved reference 'Proto'"). Bu faqat haqiqiy build'da chiqadigan xato. Tuzatildi.
+- **✅ BUILD SUCCESSFUL:** `app-debug.apk` (~41 MB) yasaldi. aapt bilan tekshirildi: package `uz.uzatuv`, versionName 1.0, minSdk 26/target 35, `FOREGROUND_SERVICE_MEDIA_PROJECTION` ruxsati, launcher `MainActivity`, label "Uzatuv". Debug keystore bilan imzolangan — o'rnatishga tayyor.
+- `docs/BUILD.md` yangilandi (CLI toolchain yo'li qo'shildi).
+
+**Holat:** Ikkala artefakt tayyor — **EXE** (ishga tushishi tasdiqlangan) va **APK** (yasaldi, imzolangan, o'rnatishga tayyor). Keyingi — foydalanuvchi APK'ni telefonga o'rnatib, EXE bilan bir xil WiFi'da ulab REAL mirroring sinovi.
+
+---
+
 ## Shablon (keyingi yozuvlar uchun)
 
 ```

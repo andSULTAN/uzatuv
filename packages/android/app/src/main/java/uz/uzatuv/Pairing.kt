@@ -3,6 +3,7 @@ package uz.uzatuv
 import android.net.Uri
 import android.util.Base64
 import org.json.JSONObject
+import uz.uzatuv.protocol.Proto
 
 /**
  * Pairing ma'lumotini QR/URI'dan o'qish — PROTOCOL.md §2.1.
