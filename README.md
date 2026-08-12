@@ -57,15 +57,28 @@ cd ../desktop && npm install && npm run dev
 # 3) Android — Android Studio'da packages/android ni ochib, telefon/emulyatorga o'rnatish
 ```
 
+## Build (EXE + APK)
+
+To'liq qo'llanma: [`docs/BUILD.md`](docs/BUILD.md). Qisqacha:
+
+```bash
+# Windows .exe (portable — sinab ko'rilgan, ishlaydi):
+cd packages/desktop && npm install && npm run pack:win
+#   → release-pack/Uzatuv-win32-x64/Uzatuv.exe
+
+# Android .apk: Android Studio'da packages/android ni oching → Build → Build APK(s)
+#   → app/build/outputs/apk/debug/app-debug.apk
+```
+
 ## Fazalar
 
 | Faza | Mazmun | Holat |
 |---|---|---|
 | **0** | Poydevor: repo, protokol, arxitektura, task board | ✅ tayyor |
-| **1** | Parallel skeletlar (Android capture/encode · Transport · Desktop decode/render · UI) | 🔄 |
-| **2** | Integratsiya: 1 qurilma end-to-end WiFi mirroring | ⏳ |
-| **3** | 2–3 qurilma + USB tethering | ⏳ |
-| **4** | Sayqal: adaptiv bitrate, reconnect, latency, `.exe`/APK build | ⏳ |
+| **1** | Parallel skeletlar (Android capture/encode · Transport · Desktop decode/render · UI) | ✅ tayyor |
+| **2** | Integratsiya: 1 qurilma end-to-end (transport avtomatik test bilan) | ✅ tayyor |
+| **3** | 2–3 qurilma + USB tethering | ✅ tayyor |
+| **4** | Sayqal: adaptiv bitrate, reconnect, `.exe` build | ✅ EXE tayyor · APK: Android Studio'da |
 
 Batafsil: [`docs/PROGRESS.md`](docs/PROGRESS.md), [`docs/TASKS.md`](docs/TASKS.md).
 

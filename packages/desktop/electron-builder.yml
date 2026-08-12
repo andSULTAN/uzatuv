@@ -1,0 +1,38 @@
+appId: uz.uzatuv.desktop
+productName: Uzatuv
+copyright: Uzatuv
+
+directories:
+  output: release/${version}
+  buildResources: build
+
+# electron-vite chiqishi (main/preload/renderer) + main process runtime deps.
+files:
+  - out/**
+  - "!**/*.map"
+
+# asar ichiga qadoqlanadi; bonjour-service (main runtime) prod-dep sifatida kiradi.
+asar: true
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+    - target: portable
+      arch:
+        - x64
+  artifactName: ${productName}-${version}-${arch}-${target}.${ext}
+
+# NSIS o'rnatuvchi (installer)
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Uzatuv
+
+# Portable (o'rnatishsiz .exe)
+portable:
+  artifactName: ${productName}-${version}-portable.${ext}

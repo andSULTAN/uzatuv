@@ -56,6 +56,30 @@ type CloseCb = () => void;
 /** Server qo'llaydigan kodeklar (afzallik emas — client tartibi hal qiladi). */
 const SERVER_CODECS: readonly Codec[] = [CODEC.H265, CODEC.H264];
 
+/** Adaptiv bitrate chegaralari (kbps). */
+const MIN_BITRATE_KBPS = 1500;
+/** Bitrate'ni yangilash uchun minimal o'zgarish (spam'ni oldini oladi). */
+const BITRATE_CHANGE_THRESHOLD = 0.1;
+
+/**
+ * Adaptiv bitrate: RTT (ping/pong)ga qarab keyingi maqsad bitrate.
+ * Sof funksiya — testlanadi. Yomon tarmoq (yuqori RTT) → pasaytiradi;
+ * yaxshi tarmoq (past RTT) → asta oshiradi (maxgacha).
+ * Spec: docs/PROTOCOL.md §6.1.
+ */
+export function computeAdaptiveBitrate(
+  currentKbps: number,
+  rttMs: number,
+  minKbps: number,
+  maxKbps: number,
+): number {
+  let next = currentKbps;
+  if (rttMs > 200) next = currentKbps * 0.7;
+  else if (rttMs > 120) next = currentKbps * 0.85;
+  else if (rttMs < 60) next = currentKbps * 1.1;
+  return Math.round(Math.min(maxKbps, Math.max(minKbps, next)));
+}
+
 export class Session {
   /** deviceId (CLIENT_HELLO.device.deviceId). Handshake tugaguncha bo'sh. */
   public id = "";
@@ -79,6 +103,10 @@ export class Session {
   private lastPongAt = Date.now();
   private pingSeq = 0;
   private closed = false;
+
+  // Adaptiv bitrate holati.
+  private maxBitrateKbps = 8000;
+  private currentBitrateKbps = 8000;
 
   private readonly videoCbs: VideoCb[] = [];
   private readonly controlCbs: ControlCb[] = [];
@@ -124,6 +152,7 @@ export class Session {
   }
 
   setBitrate(bitrateKbps: number): void {
+    this.currentBitrateKbps = bitrateKbps;
     this.send({ type: "SET_BITRATE", bitrateKbps });
   }
 
@@ -260,13 +289,15 @@ export class Session {
 
   private startStream(): void {
     // Server oqim parametrlarini so'raydi, keyin START, so'ng birinchi keyframe.
+    this.maxBitrateKbps = 8000;
+    this.currentBitrateKbps = 8000;
     this.send({
       type: "STREAM_CONFIG",
       codec: this.codec,
       maxWidth: 0, // 0 = qurilma tabiiy o'lchami
       maxHeight: 0,
       fps: 60,
-      bitrateKbps: 8000,
+      bitrateKbps: this.maxBitrateKbps,
       keyframeIntervalSec: 2,
     });
     this.send({ type: "START" });
@@ -288,6 +319,7 @@ export class Session {
       case "PONG":
         this.lastPongAt = Date.now();
         this.rttMs = Date.now() - msg.tSentMs;
+        this.adaptBitrate(this.rttMs);
         break;
       case "DISCONNECT":
         this.teardown();
@@ -315,6 +347,21 @@ export class Session {
       this.configDirty = false;
     }
     for (const cb of this.videoCbs) cb(chunk);
+  }
+
+  /** RTT'ga qarab bitrate'ni moslaydi va sezilarli o'zgarishda SET_BITRATE yuboradi. */
+  private adaptBitrate(rttMs: number): void {
+    const target = computeAdaptiveBitrate(
+      this.currentBitrateKbps,
+      rttMs,
+      MIN_BITRATE_KBPS,
+      this.maxBitrateKbps,
+    );
+    const delta = Math.abs(target - this.currentBitrateKbps) / this.currentBitrateKbps;
+    if (delta >= BITRATE_CHANGE_THRESHOLD) {
+      this.currentBitrateKbps = target;
+      this.send({ type: "SET_BITRATE", bitrateKbps: target });
+    }
   }
 
   // ---- PING/PONG liveness ----

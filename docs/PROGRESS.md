@@ -63,6 +63,22 @@
 
 ---
 
+## 2026-08-09 — FAZA 4 sayqal + build (PM)
+
+**Bajarildi:**
+- **Adaptiv bitrate:** `Session` RTT (PONG)ga qarab `computeAdaptiveBitrate` (sof funksiya) bilan bitrate'ni moslaydi, sezilarli o'zgarishda `SET_BITRATE` yuboradi (yomon tarmoq→pasaytir, yaxshi→oshir, min 1500 / max 8000 kbps). Unit test `test/adaptive.test.ts` ✅ exit 0.
+- **EXE build:** `electron-builder.yml` (NSIS installer + portable) + `pack:win` (@electron/packager, portable papka). `electron.vite.config` `@uzatuv/protocol` external qoldirildi (CJS `export *` ni rollup bundle qila olmaydi).
+- **✅ HAQIQIY EXE yasaldi va ISHGA TUSHDI:** `npm run pack:win` → `Uzatuv.exe` (188MB). Ishga tushirib tekshirildi — Electron main process ishlaydi, TCP server `0.0.0.0:8787` (+IPv6) da tinglaydi (netstat bilan tasdiqlandi). Bu real qurilmasiz eng kuchli tasdiq.
+- **`dist:win` (NSIS)** bu muhitda winCodeSign symlink privilege sabab yakunlanmadi (Windows Developer Mode/admin kerak — imzo qadamида, kod xatosi emas). `docs/BUILD.md` da aniq yozildi.
+- **APK build:** Gradle sozlamasi izchil (Gradle 8.11.1, AGP 8.7.3, Kotlin 2.1.0, minSdk 26/target 35). Bu muhitda SDK/JDK17 yo'qligi sabab **build qilinmadi** — `docs/BUILD.md` da Android Studio orqali bir-buyruqli yo'l.
+- `docs/BUILD.md` — EXE + APK to'liq build va ulash qo'llanmasi.
+
+**Halol chegara (o'zgarmadi):** real ekran capture (Android qurilma), WebCodecs GPU dekod (real H.264 oqim), APK build — faqat foydalanuvchi mashinasida. Transport + EXE ishga tushishi shu yerda tasdiqlandi.
+
+**Holat:** FAZA 0–4 kodi va build sozlamasi tayyor. EXE ishlaydigan holda yasaldi. APK — foydalanuvchi Android Studio'da yasaydi, so'ng ikkalasini WiFi'da ulab real sinov.
+
+---
+
 ## Shablon (keyingi yozuvlar uchun)
 
 ```

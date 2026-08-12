@@ -4,6 +4,7 @@
   "description": "Uzatuv desktop (PC = server): Android ekranini qabul qilib ko'rsatuvchi Electron ilova",
   "license": "UNLICENSED",
   "private": true,
+  "author": "Uzatuv",
   "main": "./out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",
@@ -14,7 +15,10 @@
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
     "test:integration": "tsx test/integration.test.ts",
     "test:multidevice": "tsx test/multidevice.test.ts",
-    "test": "npm run test:integration && npm run test:multidevice"
+    "test:adaptive": "tsx test/adaptive.test.ts",
+    "test": "npm run test:adaptive && npm run test:integration && npm run test:multidevice",
+    "dist:win": "electron-vite build && electron-builder --win --config electron-builder.yml",
+    "pack:win": "electron-vite build && electron-packager . Uzatuv --platform=win32 --arch=x64 --out=release-pack --overwrite --prune=true --ignore=\"(^/(src|test|release|release-pack)$|\\.ts$|electron-builder\\.yml|tsconfig.*json)\""
   },
   "dependencies": {
     "@uzatuv/protocol": "file:../protocol",
@@ -24,12 +28,14 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@electron/packager": "^18.4.4",
     "@tailwindcss/vite": "^4.1.13",
     "@types/node": "^22.20.1",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
     "electron": "^33.2.1",
+    "electron-builder": "^25.1.8",
     "electron-vite": "^2.3.0",
     "tailwindcss": "^4.1.13",
     "tsx": "^4.23.11",

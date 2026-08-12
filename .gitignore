@@ -9,6 +9,7 @@ out/
 
 # Electron build
 packages/desktop/release/
+packages/desktop/release-pack/
 packages/desktop/dist-electron/
 
 # Android / Gradle
