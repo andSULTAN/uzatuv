@@ -5,7 +5,7 @@
  * ULANADI, o'z ekranini encode qilib yuboradi. Handshake KLIENT tomonidan
  * (CLIENT_HELLO→SERVER_HELLO→CLIENT_AUTH→SERVER_READY), keyin AEAD.
  *
- * Video/audio kadrlar renderer'да (WebCodecs) encode qilinib, IPC orqali shu
+ * Video/audio kadrlar renderer'da (WebCodecs) encode qilinib, IPC orqali shu
  * yerga keladi va simga yuboriladi. Qabul qiluvchining control xabarlari
  * (STREAM_CONFIG/START/KEYFRAME_REQUEST/SET_BITRATE) renderer'ga uzatiladi.
  *
@@ -97,7 +97,7 @@ export class ClientSession {
     this.openSocket();
   }
 
-  /** Renderer'дан kelgan encode qilingan video kadr — simga yuboriladi. */
+  /** Renderer'daн kelgan encode qilingan video kadr — simga yuboriladi. */
   sendVideo(v: OutgoingVideo): void {
     if (!this.ready || !this.secure || !this.socket) return;
     const flags = v.isKeyframe ? FLAG.KEYFRAME : 0;
@@ -105,7 +105,7 @@ export class ClientSession {
     this.writeSecure(CHANNEL.VIDEO, flags, payload);
   }
 
-  /** CODEC_CONFIG (SPS/PPS) — agar encoder alohida bersa (annexb'да ixtiyoriy). */
+  /** CODEC_CONFIG (SPS/PPS) — agar encoder alohida bersa (annexb'da ixtiyoriy). */
   sendCodecConfig(codec: Codec, width: number, height: number, csd: Uint8Array): void {
     this.sendControl({ type: "CODEC_CONFIG", codec, width, height, csd: b64(csd) });
   }

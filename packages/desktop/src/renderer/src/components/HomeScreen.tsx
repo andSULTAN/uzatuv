@@ -22,7 +22,7 @@ export function HomeScreen({
         <ModeCard
           icon="📺"
           title="Qabul qilish"
-          desc="Boshqa qurilma (telefon / noutbuk) ekranini shu kompyuterда ko'rsatish."
+          desc="Boshqa qurilma (telefon / noutbuk) ekranini shu kompyuterda ko'rsatish."
           badge={deviceCount > 0 ? `${deviceCount} ta ulangan` : "Tinglanmoqda"}
           onClick={onReceive}
           accent="sky"
@@ -30,8 +30,8 @@ export function HomeScreen({
         <ModeCard
           icon="📡"
           title="Uzatish"
-          desc="Shu kompyuter ekranini boshqa qurilmaga (Android TV / PC) jonli uzatish."
-          badge="Ekran + (tez orada ovoz)"
+          desc="Shu kompyuter ekranini boshqa qurilmaga (Android TV / PC) jonli uzatish. Ovoz keyin qo'shiladi."
+          badge="Uzatishga tayyor"
           onClick={onTransmit}
           accent="emerald"
         />

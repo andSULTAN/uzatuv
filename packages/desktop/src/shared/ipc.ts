@@ -82,7 +82,7 @@ export interface VideoChunkIpc {
   data: ArrayBuffer;
 }
 
-/** UZATISH: renderer'дан main'ga encode qilingan video kadr. */
+/** UZATISH: renderer'daн main'ga encode qilingan video kadr. */
 export interface TransmitChunkIpc {
   /** Annex-B access unit */
   data: ArrayBuffer;

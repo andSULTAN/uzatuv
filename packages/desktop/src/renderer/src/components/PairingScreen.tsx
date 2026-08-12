@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import type { PairingView, PairingEndpointView } from "../../../shared/ipc";
+import { Step } from "./Step";
 
 /**
  * Bosh ekran — hali qurilma ulanmagan bo'lsa. QR kod, qisqa kod va
@@ -75,11 +76,10 @@ export function PairingScreen({ pairing }: { pairing: PairingView | null }): Rea
         {/* O'ng: yo'riqnoma */}
         <div className="flex flex-col justify-center gap-6">
           <div>
-            <h1 className="text-3xl font-bold text-slate-100">Uzatuv</h1>
+            <h2 className="text-xl font-bold text-slate-100">Telefon ekranini shu kompyuterga oling</h2>
             <p className="mt-2 text-slate-400">
-              Android telefoningiz ekranini shu kompyuterga jonli uzating.
-              Telefonda <span className="text-slate-200">Uzatuv</span> ilovasini oching va
-              QR kodni skanerlang.
+              Boshqa qurilmada <span className="text-slate-200">Uzatuv</span> ilovasini oching va
+              chapdagi QR kodni skanerlang. Uch qadam:
             </p>
           </div>
 
@@ -104,28 +104,6 @@ export function PairingScreen({ pairing }: { pairing: PairingView | null }): Rea
             </ol>
           </Step>
         </div>
-      </div>
-    </div>
-  );
-}
-
-function Step({
-  n,
-  title,
-  children,
-}: {
-  n: number;
-  title: string;
-  children: React.ReactNode;
-}): React.JSX.Element {
-  return (
-    <div className="flex gap-3">
-      <div className="flex h-8 w-8 flex-none items-center justify-center rounded-full bg-sky-600 text-sm font-bold text-white">
-        {n}
-      </div>
-      <div>
-        <h3 className="font-semibold text-slate-200">{title}</h3>
-        <div className="text-sm text-slate-400">{children}</div>
       </div>
     </div>
   );

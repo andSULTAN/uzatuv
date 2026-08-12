@@ -9,7 +9,7 @@ declare global {
 
   /**
    * MediaStreamTrackProcessor — WebCodecs bilan MediaStreamTrack'dan VideoFrame
-   * o'qish uchun (Chromium/Electron'да bor, lekin standart TS DOM lib'да yo'q).
+   * o'qish uchun (Chromium/Electron'da bor, lekin standart TS DOM lib'da yo'q).
    */
   class MediaStreamTrackProcessor<T = VideoFrame> {
     constructor(init: { track: MediaStreamTrack; maxBufferSize?: number });

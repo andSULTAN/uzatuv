@@ -165,6 +165,24 @@
 
 ---
 
+## 2026-08-12 — UI-reviewer ko'rigi + tuzatishlar (Desktop, PM)
+
+**Oqim:** ui-reviewer agent desktop UI'ni tekshirdi → `docs/UI_REVIEW.md` (umumiy baho: o'rta, kritik yo'q) → kod yozuvchi (PM) tuzatdi.
+
+**Qo'llangan tuzatishlar:**
+1. **Uzatish yo'riqnomasi** endi 3 raqamli qadam (`Step` umumiy komponent — qabul + uzatishда bir xil; qabul=sky, uzatish=emerald).
+2. **Ekran ulashish xatosi** o'zbekchaga map qilindi (`NotAllowedError`→"ruxsat berilmadi", va h.k.) — xom inglizcha xato yo'q.
+3. **Status ko'rsatkichi** birlashtirildi — `StatusBadge` (pill+nuqta) ikkala oqimда; uzatishда READY→"Uzatilmoqda", `size="md"` faol holatда prominent.
+4. **Kiril "да"→lotin "da"** — butun desktop/src bo'ylab (14 ta, ko'rinadigan + izoh).
+5. **HomeScreen** badge holatga aylandi ("Uzatishga tayyor"), ovoz-eslatma desc'ga.
+6. **Aksent izchilligi** — uzatish oqimi to'liq emerald (tugma, fokus, qadam, badge); header "Uzatish" `font-bold` (qabul bilan bir xil).
+7. **Darhol feedback** — "Uzatishni boshlash" bosilgach tugma "Ulanmoqda…" bo'lib bloklanadi.
+8. PairingScreen'даги takroriy katta "Uzatuv" h1 kichraytirildi.
+
+typecheck + 6 test — exit 0.
+
+---
+
 ## Shablon (keyingi yozuvlar uchun)
 
 ```

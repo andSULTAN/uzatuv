@@ -5,7 +5,7 @@
  * Annex-B) bilan encode qiladi va har kadrni callback orqali beradi (main'ga IPC
  * bilan yuboriladi). Foydalanuvchi manbani (butun ekran / oyna) tanlaydi.
  *
- * ⚠️ WebCodecs faqat Chromium/Electron renderer'да ishlaydi (Node'да emas).
+ * ⚠️ WebCodecs faqat Chromium/Electron renderer'da ishlaydi (Node'da emas).
  */
 
 export interface TransmitConfig {
@@ -51,7 +51,7 @@ export class ScreenTransmitter {
   async start(cfg: TransmitConfig): Promise<void> {
     const stream = await navigator.mediaDevices.getDisplayMedia({
       video: { frameRate: cfg.fps },
-      audio: false, // audio keyingi bosqichда
+      audio: false, // audio keyingi bosqichda
     });
     this.stream = stream;
     this.onPreview(stream);

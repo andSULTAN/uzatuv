@@ -18,12 +18,29 @@ const COLORS: Record<ConnState, string> = {
   CLOSED: "bg-rose-600",
 };
 
-/** Ulanish holatini ko'rsatuvchi rangli nishon. */
-export function StatusBadge({ state }: { state: ConnState }): React.JSX.Element {
+/**
+ * Ulanish holatini ko'rsatuvchi rangli nishon (qabul va uzatishda bir xil uslub).
+ * @param labels — kontekstga xos so'z (masalan uzatishda READY→"Uzatilmoqda").
+ * @param size — "sm" (standart) yoki "md" (faol holatda ko'proq ko'zga tashlansin).
+ */
+export function StatusBadge({
+  state,
+  labels,
+  size = "sm",
+}: {
+  state: ConnState;
+  labels?: Partial<Record<ConnState, string>>;
+  size?: "sm" | "md";
+}): React.JSX.Element {
+  const text = labels?.[state] ?? LABELS[state];
+  const pad = size === "md" ? "px-3 py-1.5 text-sm" : "px-2.5 py-1 text-xs";
+  const dot = size === "md" ? "h-2.5 w-2.5" : "h-2 w-2";
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-800/80 px-2.5 py-1 text-xs font-medium text-slate-200">
-      <span className={`h-2 w-2 rounded-full ${COLORS[state]}`} />
-      {LABELS[state]}
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full bg-slate-800/80 font-medium text-slate-200 ${pad}`}
+    >
+      <span className={`rounded-full ${dot} ${COLORS[state]}`} />
+      {text}
     </span>
   );
 }
