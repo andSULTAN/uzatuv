@@ -53,6 +53,7 @@ private enum class Mode { QR, CODE }
 fun ConnectScreen(
     onPaired: (PairingInfo) -> Unit,
     onOpenUsb: () -> Unit,
+    onBack: () -> Unit = {},
     /** Eslab qolingan kompyuterlar — ro'yxatdan tanlab QR'siz ulanish. */
     savedDevices: List<PairingInfo> = emptyList(),
     onConnectSaved: (PairingInfo) -> Unit = {},
@@ -115,6 +116,11 @@ fun ConnectScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top,
     ) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
+            OutlinedButton(onClick = onBack) { Text("← Orqaga") }
+        }
+        Spacer(Modifier.padding(4.dp))
+
         Text(
             text = "Kompyuterga ulanish",
             style = androidx.compose.material3.MaterialTheme.typography.headlineSmall,

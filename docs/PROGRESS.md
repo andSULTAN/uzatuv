@@ -183,6 +183,22 @@ typecheck + 6 test — exit 0.
 
 ---
 
+## 2026-08-12 — 2-bosqich: Android QABUL QILISH + Android TV (PM)
+
+**Bajarildi (bitta APK — telefon + TV):**
+- **`ReceiverServer`** — Android SERVER bo'ladi: TCP tinglaydi, server-tomon handshake (CLIENT_HELLO→SERVER_HELLO auth→CLIENT_AUTH tekshir→SERVER_READY→HKDF server roli→AES-256-GCM), STREAM_CONFIG/START/KEYFRAME_REQUEST yuboradi, video qabul qiladi, PING/PONG. Bitta faol ulanish.
+- **`VideoDecoder`** — MediaCodec (video/avc, h265 ham) → Surface. CODEC_CONFIG (alohida) yoki keyframe ichидан (Annex-B inline — desktop uzatuvchi) SPS/PPS ajratib configure qiladi.
+- **`ReceiverIdentity`** — qurilma doimiy serverId+sessionKey (SharedPreferences) + `uzatuv://` pairing URI + LAN IPv4.
+- **`ReceiveScreen`** — QR (ZXing) + havola (nusxalash) + yo'riqnoma; ulanганда SurfaceView'да video. `HomeScreen` (Uzatish/Qabul qilish rejim menyusi). `MainActivity` marshrutlash + tizim Orqaga.
+- **Android TV:** manifest leanback + `LEANBACK_LAUNCHER` + banner + touchscreen not-required. aapt tasdiqladi: `leanback-launchable-activity` bor. Bitta APK ikkala qurilmada.
+- Build: **BUILD SUCCESSFUL** (birinchi urinishда), APK ~43MB.
+
+**Oqim:** telefon→TV — TV "Qabul qilish" (QR ko'rsatadi), telefon "Uzatish" QR skanlaydi. PC→TV — PC "Uzatish" havolani joylaydi (TV'дан nusxalanadi/o'qiladi).
+
+**Halol chegara:** Android dekod (MediaCodec→Surface), TV real qurilmасiz sinalmadi — kompilyatsiya toza, jonli sinov foydalanuvchida. Keyingi — 3-bosqich: ovoz.
+
+---
+
 ## Shablon (keyingi yozuvlar uchun)
 
 ```

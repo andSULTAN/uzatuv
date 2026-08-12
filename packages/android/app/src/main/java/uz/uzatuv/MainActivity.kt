@@ -21,8 +21,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
+import androidx.activity.compose.BackHandler
 import uz.uzatuv.service.MediaProjectionService
 import uz.uzatuv.ui.ConnectScreen
+import uz.uzatuv.ui.HomeScreen
+import uz.uzatuv.ui.ReceiveScreen
 import uz.uzatuv.ui.StatusScreen
 import uz.uzatuv.ui.UsbTetherScreen
 import uz.uzatuv.ui.UzatuvTheme
@@ -35,7 +38,7 @@ import uz.uzatuv.ui.UzatuvTheme
  */
 class MainActivity : ComponentActivity() {
 
-    private enum class Route { CONNECT, USB }
+    private enum class Route { HOME, TRANSMIT, RECEIVE, USB }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -51,7 +54,7 @@ class MainActivity : ComponentActivity() {
     @Composable
     private fun AppRoot() {
         val ui by MirrorState.state.collectAsState()
-        var route by remember { mutableStateOf(Route.CONNECT) }
+        var route by remember { mutableStateOf(Route.HOME) }
         var pending by remember { mutableStateOf<PairingInfo?>(null) }
         // Joriy ulanish (eslab qolish taklifi uchun) + saqlangan qurilmalar ro'yxati
         var current by remember { mutableStateOf<PairingInfo?>(null) }
@@ -114,15 +117,28 @@ class MainActivity : ComponentActivity() {
                 )
             }
 
-            route == Route.USB -> UsbTetherScreen(onBack = { route = Route.CONNECT })
+            route == Route.RECEIVE -> ReceiveScreen(onBack = { route = Route.HOME })
 
-            else -> ConnectScreen(
+            route == Route.USB -> UsbTetherScreen(onBack = { route = Route.TRANSMIT })
+
+            route == Route.TRANSMIT -> ConnectScreen(
                 onPaired = { beginStart(it) },
                 onOpenUsb = { route = Route.USB },
+                onBack = { route = Route.HOME },
                 savedDevices = saved,
                 onConnectSaved = { beginStart(it) },
                 onForgetSaved = { SavedDevices.remove(this, it.serverId); saved = SavedDevices.list(this) },
             )
+
+            else -> HomeScreen(
+                onTransmit = { route = Route.TRANSMIT },
+                onReceive = { route = Route.RECEIVE },
+            )
+        }
+
+        // Tizim "Orqaga" (telefon jesti / TV pult) — bosh menyuga qaytaradi.
+        BackHandler(enabled = route != Route.HOME && !ui.active) {
+            route = Route.HOME
         }
     }
 }

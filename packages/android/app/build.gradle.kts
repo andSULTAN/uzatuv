@@ -81,4 +81,7 @@ dependencies {
 
     // ML Kit barcode (QR o'qish, offline)
     implementation(libs.mlkit.barcode.scanning)
+
+    // ZXing — QR yasash (qabul qilish rejimida havolani QR qilib ko'rsatish)
+    implementation("com.google.zxing:core:3.5.3")
 }
