@@ -16,7 +16,9 @@
     "test:integration": "tsx test/integration.test.ts",
     "test:multidevice": "tsx test/multidevice.test.ts",
     "test:adaptive": "tsx test/adaptive.test.ts",
-    "test": "npm run test:adaptive && npm run test:integration && npm run test:multidevice",
+    "test:reconnect": "tsx test/reconnect.test.ts",
+    "test:stress": "tsx test/stress.test.ts",
+    "test": "npm run test:adaptive && npm run test:integration && npm run test:multidevice && npm run test:reconnect && npm run test:stress",
     "dist:win": "electron-vite build && electron-builder --win --config electron-builder.yml",
     "pack:win": "electron-vite build && electron-packager . Uzatuv --platform=win32 --arch=x64 --out=release-pack --overwrite --prune=true --ignore=\"(^/(src|test|release|release-pack)$|\\.ts$|electron-builder\\.yml|tsconfig.*json)\""
   },

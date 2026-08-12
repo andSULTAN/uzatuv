@@ -75,6 +75,13 @@ export class TestClient {
     this.sendSecure(CHANNEL.VIDEO, FLAG.KEYFRAME, packVideoPayload(1_000_000n, this.videoSeq++, au));
   }
 
+  /** Bitta video AU (keyframe yoki delta) yuboradi — stress/burst testlari uchun. */
+  sendVideoAu(au: Uint8Array, isKeyframe: boolean): void {
+    const flags = isKeyframe ? FLAG.KEYFRAME : 0;
+    const ptsUs = BigInt(this.videoSeq + 1) * 33_000n; // ~30fps taxminiy pts
+    this.sendSecure(CHANNEL.VIDEO, flags, packVideoPayload(ptsUs, this.videoSeq++, au));
+  }
+
   private onData(chunk: Uint8Array): void {
     this.parser.push(chunk);
     let payload: Uint8Array | null;

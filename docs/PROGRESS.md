@@ -79,6 +79,19 @@
 
 ---
 
+## 2026-08-12 — FAZA 4 sayqal davomi (PM)
+
+**Bajarildi:**
+- **Reconnect reattachment bug tuzatildi (`SessionManager`):** bir xil `deviceId` qayta ulanganда eski sessiya map'da qolib, yangisi ro'yxatga olinmasligi VA eski sessiya `close`'i yangisini o'chirib yuborishi mumkin edi. Endi: yangi READY bo'lganda eski almashtiriladi (avval map yangilanadi, keyin eski yopiladi); `onClose` identity tekshiruvi bilan faqat map'dagi aynan shu sessiyani o'chiradi. `test/reconnect.test.ts` ✅ exit 0.
+- **QA stress test (`test/stress.test.ts`):** bitta klient 500 kadr burst yuboradi, server hammasini to'g'ri tartibda (seq 0..499) va baytlari aynan qabul qiladi — AEAD nonce-counter yuzlab kadr davomida sinxron qolishi + framing burst ostida to'g'riligi tasdiqlandi. ✅ exit 0.
+- **UI holati:** `DeviceView` allaqachon sayqallangan (RTT ms, FPS, o'lcham, kodek, ulanganda darhol keyframe so'rovi, placeholder) — o'zgartirish shart bo'lmadi.
+
+**Test to'plami (desktop `npm test`):** adaptive + integration + multidevice + reconnect + stress — **hammasi exit 0**.
+
+**Holat:** FAZA 4 sayqal asosiy qismi tugadi. Qolgan (foydalanuvchi mashinasida): NSIS installer (Developer Mode kerak), real qurilma latency/sifat sozlash, APK build.
+
+---
+
 ## Shablon (keyingi yozuvlar uchun)
 
 ```

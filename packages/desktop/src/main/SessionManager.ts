@@ -168,15 +168,27 @@ export class SessionManager {
     const session = new Session(socket, this.sessionKey, this.serverId);
 
     session.onState((state) => {
-      if (state === "READY" && session.id && !this.sessions.has(session.id)) {
-        this.sessions.set(session.id, session);
-        for (const cb of this.sessionCbs) cb(session);
+      if (state === "READY" && session.id) {
+        // Reconnect: shu deviceId'ning eski sessiyasi hali map'da bo'lsa,
+        // yangisini o'rnatib (almashtirib), eskisini yopamiz. Tartib muhim —
+        // avval map'ni yangilaymiz, keyin eskini yopamiz (eski onClose identity
+        // tekshiruvi tufayli yangisini o'chirmaydi).
+        const existing = this.sessions.get(session.id);
+        if (existing !== session) {
+          this.sessions.set(session.id, session);
+          if (existing) existing.close(); // eski uzilishni toza yopamiz
+          for (const cb of this.sessionCbs) cb(session);
+        }
       }
       this.emitChange();
     });
 
     session.onClose(() => {
-      if (session.id) this.sessions.delete(session.id);
+      // Faqat map'dagi AYNAN shu sessiya bo'lsa o'chiramiz — reconnect'da eski
+      // sessiyaning close'i yangi sessiyani o'chirib yubormasligi uchun.
+      if (session.id && this.sessions.get(session.id) === session) {
+        this.sessions.delete(session.id);
+      }
       this.emitChange();
     });
   }
