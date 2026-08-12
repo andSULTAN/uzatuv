@@ -12,7 +12,9 @@
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json",
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
-    "test:integration": "tsx test/integration.test.ts"
+    "test:integration": "tsx test/integration.test.ts",
+    "test:multidevice": "tsx test/multidevice.test.ts",
+    "test": "npm run test:integration && npm run test:multidevice"
   },
   "dependencies": {
     "@uzatuv/protocol": "file:../protocol",

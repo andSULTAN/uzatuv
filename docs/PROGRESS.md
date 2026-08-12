@@ -51,6 +51,18 @@
 
 ---
 
+## 2026-08-09 — FAZA 3 multi-device + USB (PM)
+
+**Bajarildi:**
+- **Multi-device:** `SessionManager` bir vaqtda `MAX_DEVICES=3` qurilma (Map bilan), 4-chi ulanish rad etiladi (socket yopiladi). Desktop grid allaqachon bir nechta sessiyani ko'rsatadi.
+- **USB + WiFi endpoint'lar:** server barcha interfeyslarda tinglaydi (0.0.0.0). `SessionManager.endpoints()` barcha lokal IPv4 (WiFi + USB tethering) ni topib, har biriga alohida pairing URI beradi; USB heuristikasi (192.168.42/43.x yoki nom `usb/rndis/ncm/tether`). `PairingScreen` da WiFi/USB tanlagich — har biriga alohida QR.
+- **Multi-device test** (`test/multidevice.test.ts`): HAQIQIY `SessionManager` ga 3 klient bir vaqtda ulanib video yubordi, 4-chi chegara sabab rad etildi. ✅ **exit 0**.
+- `TestClient` alohida faylga ajratildi (`test/testClient.ts`), integration testi undan foydalanadi.
+
+**Holat:** Transport ikkala test bilan tasdiqlandi (1 va 3 qurilma). USB yo'li — bir xil TCP, faqat IP boshqa (server 0.0.0.0 da). Keyingi — FAZA 4.
+
+---
+
 ## Shablon (keyingi yozuvlar uchun)
 
 ```

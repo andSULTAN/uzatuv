@@ -22,9 +22,16 @@ export const IPC = {
   SET_BITRATE: "uzatuv:set-bitrate",
 } as const;
 
+/** Bitta ulanish nuqtasi (WiFi yoki USB tethering interfeysi). */
+export interface PairingEndpointView {
+  kind: "wifi" | "usb";
+  ip: string;
+  uri: string;
+}
+
 /** Pairing ma'lumoti — QR kod va qisqa kod uchun. */
 export interface PairingView {
-  /** uzatuv://pair?... URI (QR ichiga) */
+  /** uzatuv://pair?... URI (asosiy — birinchi WiFi endpoint) */
   uri: string;
   ip: string;
   port: number;
@@ -32,6 +39,8 @@ export interface PairingView {
   name: string;
   /** ko'rsatish uchun qisqa kod, masalan "482-193-706" (QR o'qilmasa) */
   shortCode: string;
+  /** barcha ulanish nuqtalari (WiFi + USB) — har biriga alohida QR */
+  endpoints: PairingEndpointView[];
 }
 
 /** UI uchun bitta sessiya holati (renderer'ga yuboriladigan yengil ko'rinish). */

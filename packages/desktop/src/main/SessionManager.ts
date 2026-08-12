@@ -31,6 +31,16 @@ interface Advertiser {
   stop(): void;
 }
 
+/** Bir vaqtda ulanadigan qurilmalar chegarasi (talab: 2–3). */
+const MAX_DEVICES = 3;
+
+/** Ulanish nuqtasi — WiFi yoki USB tethering interfeysi. */
+export interface PairingEndpoint {
+  kind: "wifi" | "usb";
+  ip: string;
+  uri: string;
+}
+
 export class SessionManager {
   private server: net.Server | null = null;
   private readonly sessions = new Map<string, Session>();
@@ -85,7 +95,35 @@ export class SessionManager {
       serverId: this.pairing.serverId,
       name: this.pairing.name,
       shortCode: formatShortCode(this.shortCode),
+      endpoints: this.endpoints(),
     };
+  }
+
+  /**
+   * Barcha lokal IPv4 ulanish nuqtalari (WiFi + USB tethering), har biriga
+   * alohida pairing URI. Telefon o'z tarmog'iga mos QR'ni skanlaydi.
+   * USB tethering odatda PC ga 192.168.42.x/43.x manzil beradi.
+   */
+  private endpoints(): PairingEndpoint[] {
+    const list: PairingEndpoint[] = [];
+    const ifaces = os.networkInterfaces();
+    for (const [name, infos] of Object.entries(ifaces)) {
+      for (const info of infos ?? []) {
+        if (info.family !== "IPv4" || info.internal) continue;
+        const kind = classifyInterface(name, info.address);
+        const uri = encodePairingUri({
+          v: PROTOCOL_VERSION,
+          ip: info.address,
+          port: this.port,
+          serverId: this.serverId,
+          name: this.serverName,
+          key: this.pairing?.key ?? "",
+        });
+        list.push({ kind, ip: info.address, uri });
+      }
+    }
+    // WiFi avval, USB keyin.
+    return list.sort((a, b) => (a.kind === b.kind ? 0 : a.kind === "wifi" ? -1 : 1));
   }
 
   stop(): void {
@@ -121,6 +159,12 @@ export class SessionManager {
   }
 
   private onConnection(socket: net.Socket): void {
+    // Chegara: bir vaqtda ko'pi bilan MAX_DEVICES qurilma.
+    if (this.sessions.size >= MAX_DEVICES) {
+      console.warn(`[uzatuv] qurilmalar chegarasi (${MAX_DEVICES}) — yangi ulanish rad etildi`);
+      socket.destroy();
+      return;
+    }
     const session = new Session(socket, this.sessionKey, this.serverId);
 
     session.onState((state) => {
@@ -171,6 +215,18 @@ export class SessionManager {
       // TODO: mDNS ishlamasa qo'lda IP kiritish yo'li (UI'da IP ko'rsatilgan).
     }
   }
+}
+
+/**
+ * Interfeys turini aniqlaydi. USB tethering (telefon modem) odatda PC ga
+ * 192.168.42.x yoki 192.168.43.x manzil beradi; interfeys nomi ham ba'zan
+ * "usb"/"rndis"/"ncm"/"tether" bo'ladi. Aks holda — WiFi/LAN deb hisoblanadi.
+ */
+function classifyInterface(name: string, ip: string): "wifi" | "usb" {
+  const n = name.toLowerCase();
+  if (/usb|rndis|ncm|tether/.test(n)) return "usb";
+  if (/^192\.168\.(42|43)\./.test(ip)) return "usb";
+  return "wifi";
 }
 
 /** Birinchi ichki bo'lmagan IPv4 manzil (LAN IP). */
