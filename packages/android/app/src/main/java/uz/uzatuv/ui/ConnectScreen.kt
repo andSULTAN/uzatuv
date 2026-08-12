@@ -53,6 +53,9 @@ fun ConnectScreen(
     var mode by remember { mutableStateOf(Mode.QR) }
     var codeText by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
+    // Kamera FAQAT foydalanuvchi "skanlash"ni bosganda ochiladi (asosiy ekran —
+    // kamera o'chiq). Ekran ochilganda yoki uzatish to'xtaganda kamera ochilmaydi.
+    var scanning by remember { mutableStateOf(false) }
 
     var cameraGranted by remember {
         mutableStateOf(
@@ -64,7 +67,8 @@ fun ConnectScreen(
         ActivityResultContracts.RequestPermission(),
     ) { granted ->
         cameraGranted = granted
-        if (!granted) error = "Kamera ruxsati berilmadi. Qisqa kod bilan ulaning."
+        if (granted) scanning = true // ruxsat berildi → skanlashni boshlaymiz
+        else error = "Kamera ruxsati berilmadi. Qisqa kod bilan ulaning."
     }
 
     fun tryPair(text: String) {
@@ -96,7 +100,7 @@ fun ConnectScreen(
             )
             FilterChip(
                 selected = mode == Mode.CODE,
-                onClick = { mode = Mode.CODE; error = null },
+                onClick = { mode = Mode.CODE; error = null; scanning = false },
                 label = { Text("Kod / havola") },
             )
         }
@@ -104,8 +108,14 @@ fun ConnectScreen(
 
         when (mode) {
             Mode.QR -> QrSection(
+                scanning = scanning,
                 cameraGranted = cameraGranted,
-                onRequestCamera = { cameraLauncher.launch(Manifest.permission.CAMERA) },
+                onStartScan = {
+                    error = null
+                    if (cameraGranted) scanning = true
+                    else cameraLauncher.launch(Manifest.permission.CAMERA)
+                },
+                onStopScan = { scanning = false },
                 onScanned = { tryPair(it) },
             )
 
@@ -134,11 +144,14 @@ fun ConnectScreen(
 
 @Composable
 private fun QrSection(
+    scanning: Boolean,
     cameraGranted: Boolean,
-    onRequestCamera: () -> Unit,
+    onStartScan: () -> Unit,
+    onStopScan: () -> Unit,
     onScanned: (String) -> Unit,
 ) {
-    if (cameraGranted) {
+    if (scanning && cameraGranted) {
+        // Skanlash rejimi — kamera oynasi ochiq
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -153,14 +166,21 @@ private fun QrSection(
             text = "Kompyuterdagi QR kodni ramkaga tuting",
             textAlign = TextAlign.Center,
         )
+        Spacer(Modifier.padding(8.dp))
+        OutlinedButton(onClick = onStopScan, modifier = Modifier.widthIn(min = 220.dp)) {
+            Text("Bekor qilish")
+        }
     } else {
+        // Asosiy ekran — kamera o'chiq. Foydalanuvchi bosgandagina ochiladi.
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                text = "QR skanlash uchun kamera ruxsati kerak",
+                text = "Kompyuterda ochilgan QR kodni skanlab ulaning.",
                 textAlign = TextAlign.Center,
             )
-            Spacer(Modifier.padding(8.dp))
-            Button(onClick = onRequestCamera) { Text("Kameraga ruxsat berish") }
+            Spacer(Modifier.padding(12.dp))
+            Button(onClick = onStartScan, modifier = Modifier.widthIn(min = 220.dp)) {
+                Text("QR kodni skanlash")
+            }
         }
     }
 }
