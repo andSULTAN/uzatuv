@@ -22,9 +22,9 @@ win:
     - target: portable
       arch:
         - x64
-  artifactName: ${productName}-${version}-${arch}-${target}.${ext}
 
-# NSIS o'rnatuvchi (installer)
+# NSIS o'rnatuvchi (installer). ${target} makrosi win.artifactName'da ishlamaydi —
+# shuning uchun nom har target uchun alohida beriladi (nsis + portable).
 nsis:
   oneClick: false
   perMachine: false
@@ -32,6 +32,7 @@ nsis:
   createDesktopShortcut: true
   createStartMenuShortcut: true
   shortcutName: Uzatuv
+  artifactName: ${productName}-Setup-${version}.${ext}
 
 # Portable (o'rnatishsiz .exe)
 portable:

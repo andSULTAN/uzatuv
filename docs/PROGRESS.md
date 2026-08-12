@@ -104,6 +104,21 @@
 
 ---
 
+## 2026-08-12 — NSIS installer build (PM)
+
+**Bajarildi:**
+- **NSIS installer + portable EXE yasaldi** (`npm run dist:win`, electron-builder):
+  - `Uzatuv-Setup-1.0.0.exe` (~82 MB) — o'rnatuvchi
+  - `Uzatuv-1.0.0-portable.exe` (~82 MB) — portable (asar bilan, packager 188MB'dan ancha kichik)
+  - Ikkalasi ham to'g'ri PE (MZ) Windows exe. `dist/` ga nusxalandi.
+- **winCodeSign symlink muammosi admin'siz hal qilindi:** electron-builder winCodeSign'ni ochishда macOS symlink yaratmoqchi bo'lardi (admin/Developer Mode kerak). Yechim: winCodeSign'ni `darwin` papkasisiz (`7za x ... -xr!darwin`) oldindan cache (`winCodeSign-2.6.0`) ga ochildi → electron-builder qayta ochmaydi. `docs/BUILD.md` da yozildi.
+- `electron-builder.yml`: `win.artifactName`da ishlamaydigan `${target}` makrosi olib tashlandi; nom har target uchun alohida (`nsis.artifactName` + `portable.artifactName`).
+- Imzo: sertifikat yo'q → `CSC_IDENTITY_AUTO_DISCOVERY=false`, imzo o'tkazib yuboriladi (imzosiz installer — SmartScreen ogohlantirishi mumkin, normal).
+
+**Holat:** Uchala artefakt tayyor (`dist/`): APK, portable EXE, NSIS installer. Keyingi — foydalanuvchi real qurilmada mirroring sinovi.
+
+---
+
 ## Shablon (keyingi yozuvlar uchun)
 
 ```

@@ -25,20 +25,32 @@ Natija: `packages/desktop/release-pack/Uzatuv-win32-x64/Uzatuv.exe` —
 o'rnatishsiz ishga tushadigan ilova. Papkani ko'chirib, `Uzatuv.exe` ni bosing.
 > ✅ Tekshirildi: ishga tushadi, TCP server `0.0.0.0:8787` da tinglaydi (WiFi + USB).
 
-**B) NSIS o'rnatuvchi + portable bitta `.exe` (sayqallangan, tavsiya — release uchun):**
+**B) NSIS o'rnatuvchi + portable bitta `.exe` (sayqallangan, release — ✅ yasaldi):**
 ```bash
 cd packages/desktop && npm run dist:win
 ```
-Natija: `packages/desktop/release/1.0.0/` ichida `Uzatuv-1.0.0-x64-nsis.exe`
-(installer) va `Uzatuv-1.0.0-portable.exe`.
+Natija: `packages/desktop/release/1.0.0/` ichida:
+- `Uzatuv-Setup-1.0.0.exe` (~82 MB) — NSIS o'rnatuvchi (installer)
+- `Uzatuv-1.0.0-portable.exe` (~82 MB) — portable bitta `.exe`
 
-> ⚠️ **Muhim (Windows):** `dist:win` (electron-builder) `winCodeSign` paketini
-> ochishda **symbolic link** yaratadi — buning uchun **Developer Mode** yoqilgan
-> bo'lishi kerak (Windows Sozlamalar → Maxfiylik va xavfsizlik → Dasturchilar
-> uchun → Developer Mode = Yoniq), yoki buyruqni **administrator** sifatida ishga
-> tushiring. Aks holda "Cannot create symbolic link" xatosi chiqadi. Bu imzo (code
-> signing) uchun; Developer Mode yoqilsa bir marta hal bo'ladi.
-> Agar kerak bo'lmasa — **A usuli** (`pack:win`) bu talabsiz ishlaydi.
+> ⚠️ **winCodeSign symbolic-link muammosi (Windows, admin/Developer Mode'siz):**
+> electron-builder `winCodeSign` paketini ochishda macOS symlink'lari yaratmoqchi
+> bo'ladi — bu admin yoki Developer Mode talab qiladi. Ikki yechim:
+>
+> 1. **Developer Mode** yoqing (Sozlamalar → Maxfiylik va xavfsizlik →
+>    Dasturchilar uchun → Developer Mode = Yoniq), yoki
+> 2. **Admin'siz workaround** (shu mashinada qilingan): `winCodeSign`ni `darwin`
+>    papkasisiz oldindan cache'ga oching (darwin'da faqat macOS symlink'lari bor,
+>    Windows'ga kerak emas):
+>    ```bash
+>    SEVENZ=packages/desktop/node_modules/7zip-bin/win/x64/7za.exe
+>    CACHE="$LOCALAPPDATA/electron-builder/Cache/winCodeSign"
+>    # .7z avval bir marta yuklanadi (dist:win urinishida) — keyin:
+>    "$SEVENZ" x "$CACHE"/*.7z -o"$CACHE/winCodeSign-2.6.0" -xr!darwin -y
+>    ```
+>    So'ng `dist:win` qayta ishlaydi (imzo o'tkazib yuboriladi — sertifikat yo'q).
+>
+> Agar installer kerak bo'lmasa — **A usuli** (`pack:win`) bu talabsiz ishlaydi.
 
 ### 1.3 Dev rejimda ishga tushirish (build'siz)
 ```bash
@@ -115,6 +127,8 @@ Modem rejimi → USB modem yoqing → PC oynasidagi **USB** QR'ni skanerlang.
 
 | Artefakt | Buyruq | Natija |
 |---|---|---|
-| EXE (portable) | `cd packages/desktop && npm run pack:win` | `release-pack/Uzatuv-win32-x64/Uzatuv.exe` |
-| EXE (installer) | `npm run dist:win` (Developer Mode) | `release/1.0.0/Uzatuv-1.0.0-x64-nsis.exe` |
-| APK | Android Studio: Build → Build APK(s) | `app/build/outputs/apk/debug/app-debug.apk` |
+| EXE (installer) | `npm run dist:win` | `release/1.0.0/Uzatuv-Setup-1.0.0.exe` |
+| EXE (portable) | `npm run dist:win` | `release/1.0.0/Uzatuv-1.0.0-portable.exe` |
+| APK | `gradle :app:assembleDebug` (§2.3) | `app/build/outputs/apk/debug/app-debug.apk` |
+
+Tayyor artefaktlar (bu mashinada yasalgan) `dist/` papkasida ham nusxalangan.
