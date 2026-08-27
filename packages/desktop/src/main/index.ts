@@ -21,6 +21,14 @@ let serverIdentity: { serverId: string; sessionKey: Uint8Array } | null = null;
 let mainWindow: BrowserWindow | null = null;
 let manager: SessionManager;
 
+// MUHIM: oyna fokusda bo'lmasa yoki minimallashsa, Chromium renderer'ni
+// sekinlashtiradi/to'xtatadi — natijada ekran uzatish qotib qoladi (oxirgi
+// kadrda). Bu switch'lar throttling'ni butunlay o'chiradi (app ready'дан oldin
+// o'rnatilishi shart). Encode uzatish davomida uzluksiz ishlashi uchun.
+app.commandLine.appendSwitch("disable-background-timer-throttling");
+app.commandLine.appendSwitch("disable-renderer-backgrounding");
+app.commandLine.appendSwitch("disable-backgrounding-occluded-windows");
+
 /**
  * Server identligini (serverId + sessionKey) userData faylidan o'qiydi yoki
  * yangi yaratib saqlaydi. Doimiy bo'lishi "qurilmani eslab qolish" uchun zarur:
@@ -67,6 +75,7 @@ function createWindow(): void {
       sandbox: false, // preload'da Node kerak (contextBridge orqali cheklangan API)
       contextIsolation: true,
       nodeIntegration: false,
+      backgroundThrottling: false, // fon rejimida encode to'xtamasin
     },
   });
 
