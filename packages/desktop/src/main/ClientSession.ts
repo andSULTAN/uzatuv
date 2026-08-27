@@ -57,6 +57,9 @@ type StateCb = (s: ConnState) => void;
 const b64 = (u8: Uint8Array): string => Buffer.from(u8).toString("base64");
 const unb64 = (s: string): Uint8Array => new Uint8Array(Buffer.from(s, "base64"));
 
+/** TCP bufer chegarasi — undan oshsa delta kadrlar tashlanadi (backpressure). */
+const MAX_SEND_BUFFER = 4 * 1024 * 1024; // 4 MB (~1.6s @ 20 Mbps)
+
 export class ClientSession {
   private socket: net.Socket | null = null;
   private parser = new FrameParser();
@@ -100,6 +103,11 @@ export class ClientSession {
   /** Renderer'daн kelgan encode qilingan video kadr — simga yuboriladi. */
   sendVideo(v: OutgoingVideo): void {
     if (!this.ready || !this.secure || !this.socket) return;
+    // Backpressure: TCP bufer to'lgan bo'lsa delta kadrni TASHLAYMIZ — control
+    // (PONG) bloklanmasin va latency o'smasin. Keyframe hamma vaqt yuboriladi.
+    if (this.socket.writableLength > MAX_SEND_BUFFER && !v.isKeyframe) {
+      return; // kadr tashlandi (tarmoq band)
+    }
     const flags = v.isKeyframe ? FLAG.KEYFRAME : 0;
     const payload = packVideoPayload(v.ptsUs, this.videoSeq++, v.data);
     this.writeSecure(CHANNEL.VIDEO, flags, payload);

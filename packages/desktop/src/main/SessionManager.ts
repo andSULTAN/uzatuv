@@ -75,7 +75,7 @@ export class SessionManager {
   async start(preferredPort = DEFAULT_PORT): Promise<{ port: number; pairing: PairingInfo }> {
     this.port = await this.listen(preferredPort);
     this.pairing = makePairingInfo({
-      ip: getLocalIp(),
+      ip: primaryLanIp(),
       port: this.port,
       serverId: this.serverId,
       name: this.serverName,
@@ -120,25 +120,19 @@ export class SessionManager {
    * USB tethering odatda PC ga 192.168.42.x/43.x manzil beradi.
    */
   private endpoints(): PairingEndpoint[] {
-    const list: PairingEndpoint[] = [];
-    const ifaces = os.networkInterfaces();
-    for (const [name, infos] of Object.entries(ifaces)) {
-      for (const info of infos ?? []) {
-        if (info.family !== "IPv4" || info.internal) continue;
-        const kind = classifyInterface(name, info.address);
-        const uri = encodePairingUri({
-          v: PROTOCOL_VERSION,
-          ip: info.address,
-          port: this.port,
-          serverId: this.serverId,
-          name: this.serverName,
-          key: this.pairing?.key ?? "",
-        });
-        list.push({ kind, ip: info.address, uri });
-      }
-    }
-    // WiFi avval, USB keyin.
-    return list.sort((a, b) => (a.kind === b.kind ? 0 : a.kind === "wifi" ? -1 : 1));
+    // Faqat haqiqiy LAN interfeyslari (virtual adapterlar chiqarib tashlangan).
+    return pickLanInterfaces().map((iface) => ({
+      kind: iface.kind,
+      ip: iface.ip,
+      uri: encodePairingUri({
+        v: PROTOCOL_VERSION,
+        ip: iface.ip,
+        port: this.port,
+        serverId: this.serverId,
+        name: this.serverName,
+        key: this.pairing?.key ?? "",
+      }),
+    }));
   }
 
   stop(): void {
@@ -244,27 +238,60 @@ export class SessionManager {
   }
 }
 
-/**
- * Interfeys turini aniqlaydi. USB tethering (telefon modem) odatda PC ga
- * 192.168.42.x yoki 192.168.43.x manzil beradi; interfeys nomi ham ba'zan
- * "usb"/"rndis"/"ncm"/"tether" bo'ladi. Aks holda — WiFi/LAN deb hisoblanadi.
- */
-function classifyInterface(name: string, ip: string): "wifi" | "usb" {
-  const n = name.toLowerCase();
-  if (/usb|rndis|ncm|tether/.test(n)) return "usb";
-  if (/^192\.168\.(42|43)\./.test(ip)) return "usb";
-  return "wifi";
+interface LanIface {
+  name: string;
+  ip: string;
+  kind: "wifi" | "usb";
+  score: number;
 }
 
-/** Birinchi ichki bo'lmagan IPv4 manzil (LAN IP). */
-function getLocalIp(): string {
+/**
+ * Virtual/soxta tarmoq adapterini aniqlaydi (VirtualBox, VMware, Hyper-V, WSL,
+ * VPN, Docker...). Bular haqiqiy LAN emas — telefon ularga ulanolmaydi, shuning
+ * uchun QR'да ko'rsatilmaydi. (VirtualBox host-only sukut bo'yicha 192.168.56.x.)
+ */
+function isVirtualInterface(name: string, ip: string): boolean {
+  const n = name.toLowerCase();
+  if (/virtualbox|vmware|hyper-v|vethernet|host-only|loopback|pseudo|vpn|tailscale|zerotier|docker|wsl|npcap|bluetooth|tap-|tunnel/.test(n)) {
+    return true;
+  }
+  if (/^192\.168\.56\./.test(ip)) return true; // VirtualBox host-only (default)
+  if (/^169\.254\./.test(ip)) return true; // link-local (APIPA — ulanish yo'q)
+  if (/^198\.18\./.test(ip)) return true; // benchmark/virtual
+  return false;
+}
+
+/**
+ * Haqiqiy LAN interfeyslari (WiFi / Ethernet / USB tethering), eng yaxshisi
+ * birinchi. Virtual adapterlar chiqarib tashlanadi. USB tethering odatda PC ga
+ * 192.168.42.x/43.x manzil beradi (yoki interfeys nomi usb/rndis/ncm/tether).
+ */
+function pickLanInterfaces(): LanIface[] {
+  const out: LanIface[] = [];
   const ifaces = os.networkInterfaces();
-  for (const name of Object.keys(ifaces)) {
-    for (const info of ifaces[name] ?? []) {
-      if (info.family === "IPv4" && !info.internal) return info.address;
+  for (const [name, infos] of Object.entries(ifaces)) {
+    for (const info of infos ?? []) {
+      if (info.family !== "IPv4" || info.internal) continue;
+      if (isVirtualInterface(name, info.address)) continue;
+      const n = name.toLowerCase();
+      const isUsb = /usb|rndis|ncm|tether/.test(n) || /^192\.168\.(42|43)\./.test(info.address);
+      let score: number;
+      if (isUsb) score = 50;
+      else if (/wi.?fi|wlan|wireless/.test(n)) score = 100;
+      else if (/ethernet|eth\d|\blan\b/.test(n)) score = 85;
+      else score = 60;
+      if (/^192\.168\./.test(info.address)) score += 5;
+      else if (/^10\./.test(info.address)) score += 3;
+      out.push({ name, ip: info.address, kind: isUsb ? "usb" : "wifi", score });
     }
   }
-  return "127.0.0.1";
+  out.sort((a, b) => b.score - a.score);
+  return out;
+}
+
+/** Eng yaxshi (haqiqiy) LAN IP — QR uchun asosiy manzil. */
+function primaryLanIp(): string {
+  return pickLanInterfaces()[0]?.ip ?? "127.0.0.1";
 }
 
 function randomDigits(n: number): string {

@@ -28,7 +28,7 @@ object Proto {
     const val MAX_FRAME_LEN = 16 * 1024 * 1024 // 16 MiB
 
     const val PING_INTERVAL_MS = 2000L
-    const val PONG_TIMEOUT_MS = 6000L
+    const val PONG_TIMEOUT_MS = 15000L
     const val PAIR_CODE_TTL_MS = 120_000L
     val RECONNECT_BACKOFF_MS = longArrayOf(1000, 2000, 4000, 8000, 15000)
 

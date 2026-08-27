@@ -199,6 +199,22 @@ typecheck + 6 test — exit 0.
 
 ---
 
+## 2026-08-12 — Real qurilma bug-fix (sifat, uzilish, tarmoq) (PM)
+
+Foydalanuvchi real qurilmada sinadi — 5 ta nosozlik. Tuzatilganlari:
+
+**#3/#5 — Noto'g'ri tarmoq (VirtualBox 192.168.56.x):** `getLocalIp()` birinchi IPv4'ни (VirtualBox host-only adapteri) olardi → QR noto'g'ri tarmoqни ko'rsatardi, USB chalkashardi. Endi `pickLanInterfaces()` virtual adapterlarni (VirtualBox/VMware/Hyper-V/WSL/VPN + 192.168.56/169.254/198.18 IP'lari) chiqarib tashlaydi, haqiqiy WiFi/Ethernet/USB'ni tanlaydi. **Tasdiqlandi:** shu mashinada 192.168.56.1 EXCLUDE, 192.168.1.36 (WiFi) asosiy. Android `lanIpv4()` ham WiFi afzal (cellular/VPN o'tkazib yuboriladi).
+
+**#1 — Scroll'da sifat pasayadi (gorizontal xira chiziqlar):** bitrate past (8 Mbps) edi + adaptiv scroll'даги RTT sakrashида sifatni 1500 kbps'gача tushirardi. Endi: bitrate **20 Mbps** (lokal), floor **8 Mbps** (past sifatga tushmaydi), adaptiv YUMSHOQ (faqat RTT>250/500ms да). Desktop Session + Android ReceiverServer STREAM_CONFIG.
+
+**#2 — Davriy uzilish (connecting→qisqa→uziladi):** video oqimi TCP buferini to'ldirib PONG'ni kechiktirardi → PONG_TIMEOUT (6s) → uzilardi. Tuzatish: (a) PONG_TIMEOUT **15s** (TS + Kotlin mirror), (b) backpressure — bufer to'lганда delta kadrlar TASHLANADI: desktop `ClientSession` (writableLength>4MB), Android `TransportClientImpl` jo'natish navbati (bitta sender thread, video navbat to'lса drop, control/PONG ustuvor).
+
+**Tekshiruv:** desktop typecheck + 6 test exit 0; APK BUILD SUCCESSFUL.
+
+**#4 — Qisqa kod:** hali ishlamaydi (display-only). To'liq qilish uchun mDNS topish + kod-almashinuv kerak — alohida qadam. QR + "eslab qolish" (Android→PC) allaqachon ishlaydi.
+
+---
+
 ## Shablon (keyingi yozuvlar uchun)
 
 ```

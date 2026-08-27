@@ -187,9 +187,10 @@ class ReceiverServer(
 
                 // Oqim parametrlari + boshlash + birinchi keyframe
                 sendControl(
+                    // Lokal tarmoq — yuqori bitrate (20 Mbps) yuqori sifat uchun.
                     JSONObject().put("type", "STREAM_CONFIG").put("codec", chosenCodec)
                         .put("maxWidth", 0).put("maxHeight", 0).put("fps", 60)
-                        .put("bitrateKbps", 8000).put("keyframeIntervalSec", 2),
+                        .put("bitrateKbps", 20000).put("keyframeIntervalSec", 2),
                 )
                 sendControl(JSONObject().put("type", "START"))
                 sendControl(JSONObject().put("type", "KEYFRAME_REQUEST"))

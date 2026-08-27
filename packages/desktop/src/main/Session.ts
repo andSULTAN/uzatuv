@@ -56,15 +56,21 @@ type CloseCb = () => void;
 /** Server qo'llaydigan kodeklar (afzallik emas — client tartibi hal qiladi). */
 const SERVER_CODECS: readonly Codec[] = [CODEC.H265, CODEC.H264];
 
-/** Adaptiv bitrate chegaralari (kbps). */
-const MIN_BITRATE_KBPS = 1500;
+/**
+ * Adaptiv bitrate chegaralari (kbps). Lokal tarmoq uchun YUQORI sifat: 20 Mbps
+ * cap, 8 Mbps floor. Floor yuqori bo'lgani uchun scroll (yuqori harakat) paytida
+ * ham tasvir xiralashmaydi.
+ */
+const MIN_BITRATE_KBPS = 8000;
+const MAX_BITRATE_KBPS = 20000;
 /** Bitrate'ni yangilash uchun minimal o'zgarish (spam'ni oldini oladi). */
 const BITRATE_CHANGE_THRESHOLD = 0.1;
 
 /**
  * Adaptiv bitrate: RTT (ping/pong)ga qarab keyingi maqsad bitrate.
- * Sof funksiya — testlanadi. Yomon tarmoq (yuqori RTT) → pasaytiradi;
- * yaxshi tarmoq (past RTT) → asta oshiradi (maxgacha).
+ * Sof funksiya — testlanadi. LOKAL tarmoq uchun YUMSHOQ: faqat tarmoq jiddiy
+ * to'lganда (yuqori RTT) pasaytiradi. Scroll paytидаги qisqa RTT sakrashi sifatni
+ * tushirmaydi (aks holda gorizontal xira chiziqlar chiqadi).
  * Spec: docs/PROTOCOL.md §6.1.
  */
 export function computeAdaptiveBitrate(
@@ -74,9 +80,9 @@ export function computeAdaptiveBitrate(
   maxKbps: number,
 ): number {
   let next = currentKbps;
-  if (rttMs > 200) next = currentKbps * 0.7;
-  else if (rttMs > 120) next = currentKbps * 0.85;
-  else if (rttMs < 60) next = currentKbps * 1.1;
+  if (rttMs > 500) next = currentKbps * 0.8; // tarmoq jiddiy to'lgan
+  else if (rttMs > 250) next = currentKbps * 0.92; // mo'tadil
+  else if (rttMs < 100) next = currentKbps * 1.08; // barqaror — asta oshiramiz
   return Math.round(Math.min(maxKbps, Math.max(minKbps, next)));
 }
 
@@ -289,8 +295,9 @@ export class Session {
 
   private startStream(): void {
     // Server oqim parametrlarini so'raydi, keyin START, so'ng birinchi keyframe.
-    this.maxBitrateKbps = 8000;
-    this.currentBitrateKbps = 8000;
+    // Lokal tarmoq — yuqori bitrate (20 Mbps) yuqori sifat uchun.
+    this.maxBitrateKbps = MAX_BITRATE_KBPS;
+    this.currentBitrateKbps = MAX_BITRATE_KBPS;
     this.send({
       type: "STREAM_CONFIG",
       codec: this.codec,

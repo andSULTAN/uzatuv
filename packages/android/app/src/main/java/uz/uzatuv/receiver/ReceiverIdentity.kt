@@ -63,21 +63,38 @@ class ReceiverIdentity private constructor(
     }
 }
 
-/** WiFi/LAN IPv4 manzil (site-local afzal). Topilmasa "0.0.0.0". */
+/**
+ * WiFi/LAN IPv4 manzil. WiFi (wlan) afzal, cellular (rmnet) va VPN (tun/ppp)
+ * o'tkazib yuboriladi — telefon shu manzilda uzatuvchi bilan bir tarmoqda bo'lsin.
+ * Topilmasa "0.0.0.0".
+ */
 fun lanIpv4(): String {
-    var fallback: String? = null
+    var best: String? = null
+    var bestScore = -1
     try {
         for (ni in NetworkInterface.getNetworkInterfaces()) {
-            if (!ni.isUp || ni.isLoopback) continue
+            if (!ni.isUp || ni.isLoopback || ni.isVirtual) continue
+            val n = ni.name.lowercase()
+            // cellular / VPN / point-to-point — LAN emas
+            if (n.startsWith("rmnet") || n.startsWith("pdp") || n.contains("tun") || n.contains("ppp")) continue
+            val score = when {
+                n.startsWith("wlan") -> 100 // WiFi
+                n.startsWith("eth") -> 85 // Ethernet (TV)
+                n.startsWith("ap") || n.startsWith("swlan") -> 70 // hotspot
+                else -> 50
+            }
             for (addr in ni.inetAddresses) {
                 if (addr.isLoopbackAddress || addr !is Inet4Address) continue
+                if (!addr.isSiteLocalAddress) continue // 192.168.x / 10.x / 172.16-31.x
                 val host = addr.hostAddress ?: continue
-                if (addr.isSiteLocalAddress) return host // 192.168.x / 10.x / 172.16-31.x
-                if (fallback == null) fallback = host
+                if (score > bestScore) {
+                    bestScore = score
+                    best = host
+                }
             }
         }
     } catch (_: Exception) {
         // e'tiborsiz
     }
-    return fallback ?: "0.0.0.0"
+    return best ?: "0.0.0.0"
 }

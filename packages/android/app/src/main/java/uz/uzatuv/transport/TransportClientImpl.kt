@@ -45,6 +45,9 @@ class TransportClientImpl(
     private companion object {
         const val TAG = "UzatuvTransport"
         const val READ_BUF = 64 * 1024
+        // Navbatда to'planishi mumkin bo'lgan video kadrlar chegarasi — undan
+        // oshsa yangi delta kadrlar tashlanadi (backpressure). PONG bloklanmaydi.
+        const val MAX_QUEUED_VIDEO = 5
     }
 
     private var pairing: PairingInfo? = null
@@ -66,8 +69,12 @@ class TransportClientImpl(
     // Video AU ketma-ket raqami (har AU'da +1)
     private var videoSeq = 0
 
-    // Yuborish (seal + write) qat'iy ketma-ketlikda bo'lishi shart — nonce counter tartibi uchun
-    private val sendLock = Any()
+    // Jo'natish navbati — bitta sender thread seal+write qiladi (nonce tartibi
+    // saqlanadi). Video kadrlar navbat to'lганda tashlanadi; control (PONG) oldinга.
+    private data class Pending(val channel: Int, val flags: Int, val payload: ByteArray)
+    private val sendQueue = ArrayDeque<Pending>()
+    private val queueLock = java.lang.Object()
+    private var senderThread: Thread? = null
 
     // PING/PONG holati
     @Volatile private var pingSeq = 0
@@ -95,12 +102,14 @@ class TransportClientImpl(
                 attempt = 0
                 lastInboundMs = System.currentTimeMillis()
                 setState(ConnState.READY)
+                startSender()
                 startPingThread()
                 readLoop() // socket yopilguncha bloklaydi
             } catch (e: Exception) {
                 Log.w(TAG, "Ulanish uzildi: ${e.message}")
             }
             stopPingThread()
+            stopSender()
             closeSocketQuiet()
             if (closed) break
             val idx = min(attempt, Proto.RECONNECT_BACKOFF_MS.size - 1)
@@ -261,27 +270,61 @@ class TransportClientImpl(
         if (frame.isKeyframe) flags = flags or Proto.FLAG_KEYFRAME
         if (frame.isConfig) flags = flags or Proto.FLAG_CONFIG
         val payload = Video.packVideoPayload(frame.ptsUs, videoSeq++, frame.data)
-        writeSealed(Proto.CH_VIDEO, flags, payload)
+        enqueue(Proto.CH_VIDEO, flags, payload, keyframe = frame.isKeyframe || frame.isConfig, priority = false)
     }
 
     override fun sendControl(msg: ControlMessage) {
-        writeSealed(Proto.CH_CONTROL, 0, ControlCodec.encode(msg))
+        // Control (PONG/keyframe req) — ustuvor: navbat oldiga qo'yiladi.
+        enqueue(Proto.CH_CONTROL, 0, ControlCodec.encode(msg), keyframe = false, priority = true)
     }
 
-    private fun writeSealed(channel: Int, flags: Int, payload: ByteArray) {
-        val ch = sendCh ?: return
-        val out = output ?: return
-        synchronized(sendLock) {
-            try {
-                val inner = Framing.encodeInner(channel, flags, payload)
-                val sealed = ch.seal(inner)
-                val frame = Framing.frameWithLength(sealed)
-                out.write(frame)
-                out.flush()
-            } catch (e: Exception) {
-                Log.w(TAG, "Yuborishda xato — ulanish uziladi", e)
-                closeSocketQuiet() // readLoop chiqadi → reconnect
+    private fun enqueue(channel: Int, flags: Int, payload: ByteArray, keyframe: Boolean, priority: Boolean) {
+        synchronized(queueLock) {
+            if (channel == Proto.CH_VIDEO && !keyframe) {
+                var videoCount = 0
+                for (p in sendQueue) if (p.channel == Proto.CH_VIDEO) videoCount++
+                if (videoCount >= MAX_QUEUED_VIDEO) return // backpressure — kadr tashlandi
             }
+            val item = Pending(channel, flags, payload)
+            if (priority) sendQueue.addFirst(item) else sendQueue.addLast(item)
+            queueLock.notifyAll()
+        }
+    }
+
+    /** Bitta sender thread — navbatdan olib, seal qilib, yozadi (nonce tartibi). */
+    private fun startSender() {
+        stopSender()
+        senderThread = thread(name = "uzatuv-send", isDaemon = true) {
+            try {
+                while (!closed) {
+                    val item = synchronized(queueLock) {
+                        while (sendQueue.isEmpty() && !closed) queueLock.wait()
+                        if (closed) null else sendQueue.removeFirst()
+                    } ?: break
+                    val ch = sendCh ?: break
+                    val out = output ?: break
+                    try {
+                        val inner = Framing.encodeInner(item.channel, item.flags, item.payload)
+                        out.write(Framing.frameWithLength(ch.seal(inner)))
+                        out.flush()
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Yuborishda xato — ulanish uziladi", e)
+                        closeSocketQuiet()
+                        break
+                    }
+                }
+            } catch (_: InterruptedException) {
+                // stopSender — toza chiqish
+            }
+        }
+    }
+
+    private fun stopSender() {
+        senderThread?.interrupt()
+        senderThread = null
+        synchronized(queueLock) {
+            sendQueue.clear()
+            queueLock.notifyAll()
         }
     }
 
@@ -322,6 +365,7 @@ class TransportClientImpl(
             }
         } catch (_: Exception) {}
         stopPingThread()
+        stopSender()
         closeSocketQuiet()
         connThread?.interrupt()
         setState(ConnState.CLOSED)

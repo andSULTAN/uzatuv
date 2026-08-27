@@ -15,9 +15,11 @@ export const MDNS_SERVICE_TYPE = "_uzatuv._tcp";
 /** Hard cap on a single wire frame (bytes). Larger => protocol error. */
 export const MAX_FRAME_LEN = 16 * 1024 * 1024; // 16 MiB
 
-/** Latency ping cadence and liveness timeout. */
+/** Latency ping cadence and liveness timeout.
+ * PONG_TIMEOUT yuqori (15s) — og'ir video oqimi PONG'ni biroz kechiktirsa ham
+ * ulanish uzilmasin (davriy uzilishning oldini oladi). */
 export const PING_INTERVAL_MS = 2000;
-export const PONG_TIMEOUT_MS = 6000;
+export const PONG_TIMEOUT_MS = 15000;
 
 /** Short pairing code validity window. */
 export const PAIR_CODE_TTL_MS = 120_000;
