@@ -50,7 +50,13 @@ export class ScreenTransmitter {
   /** Ekranni tanlab, encode oqimini boshlaydi. */
   async start(cfg: TransmitConfig): Promise<void> {
     const stream = await navigator.mediaDevices.getDisplayMedia({
-      video: { frameRate: cfg.fps },
+      // O'lchamni 1080p'gача cheklaymiz (yuqori DPI ekran encoder'ni ochlik
+      // qoldirmasin) — brauzer capture'ни kichraytiradi.
+      video: {
+        frameRate: cfg.fps,
+        width: { max: cfg.width },
+        height: { max: cfg.height },
+      },
       audio: false, // audio keyingi bosqichda
     });
     this.stream = stream;

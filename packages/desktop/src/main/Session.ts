@@ -105,6 +105,10 @@ export class Session {
   private lastConfig: Uint8Array | null = null;
   private configDirty = false;
 
+  // Kadr yo'qolishini aniqlash (seq sakrasa → keyframe so'raymiz, tez tiklanish).
+  private lastVideoSeq = -1;
+  private lastKeyframeReqAt = 0;
+
   private pingTimer: ReturnType<typeof setInterval> | null = null;
   private lastPongAt = Date.now();
   private pingSeq = 0;
@@ -295,17 +299,19 @@ export class Session {
 
   private startStream(): void {
     // Server oqim parametrlarini so'raydi, keyin START, so'ng birinchi keyframe.
-    // Lokal tarmoq — yuqori bitrate (20 Mbps) yuqori sifat uchun.
+    // Lokal tarmoq — yuqori bitrate (20 Mbps). O'lcham 1080p'gача cheklanadi:
+    // yuqori DPI planshet (masalan 3200×2136) native holда encoder ochlik qoladi
+    // va tasvir xiralashadi/artefakt beradi. 1080p @ 30fps @ 20Mbps — o'tkir sifat.
     this.maxBitrateKbps = MAX_BITRATE_KBPS;
     this.currentBitrateKbps = MAX_BITRATE_KBPS;
     this.send({
       type: "STREAM_CONFIG",
       codec: this.codec,
-      maxWidth: 0, // 0 = qurilma tabiiy o'lchami
-      maxHeight: 0,
-      fps: 60,
+      maxWidth: 1920,
+      maxHeight: 1080,
+      fps: 30,
       bitrateKbps: this.maxBitrateKbps,
-      keyframeIntervalSec: 2,
+      keyframeIntervalSec: 1, // qisqa GOP — kadr yo'qolса tez tiklanadi
     });
     this.send({ type: "START" });
     this.send({ type: "KEYFRAME_REQUEST" });
@@ -341,11 +347,24 @@ export class Session {
 
   private handleVideo(flags: number, payload: Uint8Array): void {
     const { ptsUs, seq, au } = unpackVideoPayload(payload);
+    const isKeyframe = (flags & FLAG.KEYFRAME) !== 0;
+
+    // Kadr yo'qolgan bo'lsa (seq sakradi) — mos-kadr yo'q, artefakt chiqadi.
+    // Darhol keyframe so'raymiz (debounce 500ms) — dekoder tez tiklansin.
+    if (!isKeyframe && this.lastVideoSeq >= 0 && seq > this.lastVideoSeq + 1) {
+      const now = Date.now();
+      if (now - this.lastKeyframeReqAt > 500) {
+        this.lastKeyframeReqAt = now;
+        this.send({ type: "KEYFRAME_REQUEST" });
+      }
+    }
+    this.lastVideoSeq = seq;
+
     const chunk: VideoChunk = {
       data: au,
       ptsUs,
       seq,
-      isKeyframe: (flags & FLAG.KEYFRAME) !== 0,
+      isKeyframe,
       codec: this.codec,
     };
     // CODEC_CONFIG o'zgargan bo'lsa (yoki inline CONFIG bayrog'i) — biriktiramiz.

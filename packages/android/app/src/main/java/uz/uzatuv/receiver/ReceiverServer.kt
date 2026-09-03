@@ -115,6 +115,9 @@ class ReceiverServer(
         private var decoder: VideoDecoder? = null
         private var lastConfig: ByteArray? = null
         private var mime = "video/avc"
+        // Kadr yo'qolishini aniqlash (seq sakrasa → keyframe so'raymiz).
+        private var lastVideoSeq = -1
+        private var lastKeyframeReqMs = 0L
         private var pingThread: Thread? = null
         @Volatile private var closed = false
         @Volatile private var lastInbound = System.currentTimeMillis()
@@ -187,10 +190,11 @@ class ReceiverServer(
 
                 // Oqim parametrlari + boshlash + birinchi keyframe
                 sendControl(
-                    // Lokal tarmoq — yuqori bitrate (20 Mbps) yuqori sifat uchun.
+                    // Lokal — 20 Mbps, 1080p'gача cheklangan (yuqori DPI ekran
+                    // encoder'ni ochlik qoldirmasin), 30fps, qisqa GOP (1s).
                     JSONObject().put("type", "STREAM_CONFIG").put("codec", chosenCodec)
-                        .put("maxWidth", 0).put("maxHeight", 0).put("fps", 60)
-                        .put("bitrateKbps", 20000).put("keyframeIntervalSec", 2),
+                        .put("maxWidth", 1920).put("maxHeight", 1080).put("fps", 30)
+                        .put("bitrateKbps", 20000).put("keyframeIntervalSec", 1),
                 )
                 sendControl(JSONObject().put("type", "START"))
                 sendControl(JSONObject().put("type", "KEYFRAME_REQUEST"))
@@ -241,6 +245,17 @@ class ReceiverServer(
         private fun handleVideo(flags: Int, payload: ByteArray) {
             val vp = Video.unpackVideoPayload(payload)
             val isKey = (flags and Proto.FLAG_KEYFRAME) != 0
+
+            // Kadr yo'qolgan bo'lsa (seq sakradi) — keyframe so'raymiz (debounce 500ms).
+            if (!isKey && lastVideoSeq >= 0 && vp.seq > lastVideoSeq + 1) {
+                val now = System.currentTimeMillis()
+                if (now - lastKeyframeReqMs > 500) {
+                    lastKeyframeReqMs = now
+                    sendControl(JSONObject().put("type", "KEYFRAME_REQUEST"))
+                }
+            }
+            lastVideoSeq = vp.seq
+
             val s = surface
             if (decoder == null && s != null) {
                 decoder = VideoDecoder(s, mime).also { d -> lastConfig?.let { d.setConfig(it) } }
