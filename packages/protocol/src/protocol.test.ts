@@ -28,6 +28,7 @@ import {
   formatShortCode,
 } from "./pairing";
 import { packVideoPayload, unpackVideoPayload } from "./video";
+import { packAudioPayload, unpackAudioPayload } from "./audio";
 import { encodeControl, decodeControl } from "./messages";
 import { CHANNEL, FLAG, HMAC_SERVER_LABEL, HMAC_CLIENT_LABEL } from "./constants";
 
@@ -137,6 +138,14 @@ test("video: payload header round-trip", () => {
   assert.equal(ptsUs, 1234567890123n);
   assert.equal(seq, 42);
   assert.deepEqual([...out], [...au]);
+});
+
+test("audio: payload header round-trip", () => {
+  const data = new Uint8Array([0xfc, 0x01, 0x02, 0x03]);
+  const packed = packAudioPayload(987654321n, data);
+  const { ptsUs, data: out } = unpackAudioPayload(packed);
+  assert.equal(ptsUs, 987654321n);
+  assert.deepEqual([...out], [...data]);
 });
 
 test("messages: control encode/decode round-trip", () => {

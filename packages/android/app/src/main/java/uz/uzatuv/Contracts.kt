@@ -121,6 +121,10 @@ data class DeviceInfo(
 interface TransportClient {
     fun connect(pairing: PairingInfo)
     fun sendVideo(frame: EncodedFrame)
+    /** Encode qilingan audio kadr (Opus) — kanal 2. */
+    fun sendAudio(ptsUs: Long, data: ByteArray)
+    /** Audio format (Opus) — ovoz boshlanishida bir marta. */
+    fun sendAudioConfig(sampleRate: Int, channels: Int)
     fun sendControl(msg: ControlMessage)
     fun onControl(handler: (ControlMessage) -> Unit)
     fun onStateChange(handler: (ConnState) -> Unit)

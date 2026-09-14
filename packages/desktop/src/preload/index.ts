@@ -6,7 +6,16 @@
 import { contextBridge, ipcRenderer } from "electron";
 import type { IpcRendererEvent } from "electron";
 import { IPC } from "../shared/ipc";
-import type { PairingView, SessionView, VideoChunkIpc, TransmitChunkIpc, TransmitStartResult } from "../shared/ipc";
+import type {
+  PairingView,
+  SessionView,
+  VideoChunkIpc,
+  TransmitChunkIpc,
+  TransmitStartResult,
+  AudioChunkIpc,
+  AudioConfigIpc,
+  TransmitAudioIpc,
+} from "../shared/ipc";
 import type { UzatuvApi } from "../shared/api";
 import type { ControlMessage, ConnState } from "@uzatuv/protocol";
 
@@ -49,6 +58,20 @@ const api: UzatuvApi = {
     ipcRenderer.on(IPC.TRANSMIT_CONTROL, handler);
     return () => ipcRenderer.removeListener(IPC.TRANSMIT_CONTROL, handler);
   },
+
+  onAudioConfig: (cb) => {
+    const handler = (_e: IpcRendererEvent, cfg: AudioConfigIpc): void => cb(cfg);
+    ipcRenderer.on(IPC.AUDIO_CONFIG, handler);
+    return () => ipcRenderer.removeListener(IPC.AUDIO_CONFIG, handler);
+  },
+  onAudio: (cb) => {
+    const handler = (_e: IpcRendererEvent, chunk: AudioChunkIpc): void => cb(chunk);
+    ipcRenderer.on(IPC.AUDIO, handler);
+    return () => ipcRenderer.removeListener(IPC.AUDIO, handler);
+  },
+  transmitAudioConfig: (sampleRate, channels) =>
+    ipcRenderer.send(IPC.TRANSMIT_AUDIO_CONFIG, sampleRate, channels),
+  transmitAudio: (chunk: TransmitAudioIpc) => ipcRenderer.send(IPC.TRANSMIT_AUDIO, chunk),
 };
 
 contextBridge.exposeInMainWorld("uzatuv", api);

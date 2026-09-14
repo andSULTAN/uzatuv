@@ -14,6 +14,7 @@ import uz.uzatuv.TransportClient
 import uz.uzatuv.protocol.Crypto
 import uz.uzatuv.protocol.FrameParser
 import uz.uzatuv.protocol.Framing
+import uz.uzatuv.protocol.Audio
 import uz.uzatuv.protocol.Proto
 import uz.uzatuv.protocol.Video
 import java.io.InputStream
@@ -276,6 +277,15 @@ class TransportClientImpl(
     override fun sendControl(msg: ControlMessage) {
         // Control (PONG/keyframe req) — ustuvor: navbat oldiga qo'yiladi.
         enqueue(Proto.CH_CONTROL, 0, ControlCodec.encode(msg), keyframe = false, priority = true)
+    }
+
+    override fun sendAudio(ptsUs: Long, data: ByteArray) {
+        // Audio kichik va muhim — tashlab yubormaymiz (keyframe=true kabi).
+        enqueue(Proto.CH_AUDIO, 0, Audio.packAudioPayload(ptsUs, data), keyframe = true, priority = false)
+    }
+
+    override fun sendAudioConfig(sampleRate: Int, channels: Int) {
+        sendControl(ControlMessage.AudioConfig("opus", sampleRate, channels))
     }
 
     private fun enqueue(channel: Int, flags: Int, payload: ByteArray, keyframe: Boolean, priority: Boolean) {

@@ -10,10 +10,18 @@ import { hostname } from "node:os";
 import { randomUUID } from "node:crypto";
 import { generateSessionKey, decodePairingUri, sessionKeyFromPairing } from "@uzatuv/protocol";
 import { SessionManager } from "./SessionManager";
-import type { Session, VideoChunk } from "./Session";
+import type { Session, VideoChunk, AudioChunk } from "./Session";
 import { ClientSession } from "./ClientSession";
 import { IPC } from "../shared/ipc";
-import type { SessionView, VideoChunkIpc, TransmitChunkIpc, TransmitStartResult } from "../shared/ipc";
+import type {
+  SessionView,
+  VideoChunkIpc,
+  TransmitChunkIpc,
+  TransmitStartResult,
+  AudioChunkIpc,
+  AudioConfigIpc,
+  TransmitAudioIpc,
+} from "../shared/ipc";
 
 let transmitClient: ClientSession | null = null;
 let serverIdentity: { serverId: string; sessionKey: Uint8Array } | null = null;
@@ -76,6 +84,7 @@ function createWindow(): void {
       contextIsolation: true,
       nodeIntegration: false,
       backgroundThrottling: false, // fon rejimida encode to'xtamasin
+      autoplayPolicy: "no-user-gesture-required", // qabul qilingan ovoz avto chalinsin
     },
   });
 
@@ -130,6 +139,16 @@ function forwardVideo(deviceId: string, chunk: VideoChunk): void {
   mainWindow.webContents.send(IPC.VIDEO, payload);
 }
 
+function forwardAudio(deviceId: string, chunk: AudioChunk): void {
+  if (!mainWindow) return;
+  const payload: AudioChunkIpc = {
+    deviceId,
+    ptsUs: chunk.ptsUs.toString(),
+    data: toArrayBuffer(chunk.data),
+  };
+  mainWindow.webContents.send(IPC.AUDIO, payload);
+}
+
 function wireIpc(): void {
   ipcMain.handle(IPC.GET_PAIRING, () => manager.pairingView());
 
@@ -143,6 +162,13 @@ function wireIpc(): void {
   manager.onChange(() => pushSessions());
   manager.onSession((session) => {
     session.onVideo((chunk) => forwardVideo(session.id, chunk));
+    session.onAudio((chunk) => forwardAudio(session.id, chunk));
+    session.onControl((m) => {
+      if (m.type === "AUDIO_CONFIG" && mainWindow) {
+        const cfg: AudioConfigIpc = { deviceId: session.id, sampleRate: m.sampleRate, channels: m.channels };
+        mainWindow.webContents.send(IPC.AUDIO_CONFIG, cfg);
+      }
+    });
   });
 
   // ---- UZATISH rejimi ----
@@ -183,6 +209,13 @@ function wireIpc(): void {
   ipcMain.on(IPC.TRANSMIT_STOP, () => {
     transmitClient?.disconnect();
     transmitClient = null;
+  });
+
+  ipcMain.on(IPC.TRANSMIT_AUDIO_CONFIG, (_e, sampleRate: number, channels: number) => {
+    transmitClient?.sendAudioConfig(sampleRate, channels);
+  });
+  ipcMain.on(IPC.TRANSMIT_AUDIO, (_e, chunk: TransmitAudioIpc) => {
+    transmitClient?.sendAudio(BigInt(chunk.ptsUs), new Uint8Array(chunk.data));
   });
 }
 

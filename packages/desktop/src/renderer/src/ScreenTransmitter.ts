@@ -33,10 +33,19 @@ export class ScreenTransmitter {
   private forceKeyframe = false;
   private frameCount = 0;
 
+  // Audio (Opus)
+  private audioEncoder: AudioEncoder | null = null;
+  private audioReader: ReadableStreamDefaultReader<AudioData> | null = null;
+  private audioMuted = false;
+
   constructor(
     private readonly onChunk: (data: Uint8Array, ptsUs: bigint, isKeyframe: boolean) => void,
     private readonly onPreview: (stream: MediaStream) => void,
     private readonly onEnded: (reason: string) => void,
+    /** Encode qilingan audio kadr (Opus). */
+    private readonly onAudioChunk?: (data: Uint8Array, ptsUs: bigint) => void,
+    /** Audio format aniqlanganда (sampleRate, channels). */
+    private readonly onAudioConfig?: (sampleRate: number, channels: number) => void,
   ) {}
 
   static isSupported(): boolean {
@@ -47,8 +56,8 @@ export class ScreenTransmitter {
     );
   }
 
-  /** Ekranni tanlab, encode oqimini boshlaydi. */
-  async start(cfg: TransmitConfig): Promise<void> {
+  /** Ekranni tanlab, encode oqimini boshlaydi. withAudio=true bo'lsa tizim ovozi ham. */
+  async start(cfg: TransmitConfig, withAudio = false): Promise<void> {
     const stream = await navigator.mediaDevices.getDisplayMedia({
       // O'lchamni 1080p'gача cheklaymiz (yuqori DPI ekran encoder'ni ochlik
       // qoldirmasin) — brauzer capture'ни kichraytiradi.
@@ -57,7 +66,7 @@ export class ScreenTransmitter {
         width: { max: cfg.width },
         height: { max: cfg.height },
       },
-      audio: false, // audio keyingi bosqichda
+      audio: withAudio, // tizim ovozi (foydalanuvchi "ovozni ulashish" tanlasa)
     });
     this.stream = stream;
     this.onPreview(stream);
@@ -92,6 +101,61 @@ export class ScreenTransmitter {
     this.reader = processor.readable.getReader();
     this.running = true;
     void this.pump();
+
+    // Audio (Opus) — agar tizim ovozi tanlangan bo'lsa
+    const audioTrack = stream.getAudioTracks()[0];
+    if (withAudio && audioTrack && "AudioEncoder" in window) {
+      this.startAudio(audioTrack);
+    }
+  }
+
+  private startAudio(track: MediaStreamTrack): void {
+    const s = track.getSettings();
+    const sampleRate = (s.sampleRate as number | undefined) ?? 48000;
+    const channels = (s.channelCount as number | undefined) ?? 2;
+    this.onAudioConfig?.(sampleRate, channels);
+
+    const enc = new AudioEncoder({
+      output: (chunk) => {
+        if (this.audioMuted) return;
+        const buf = new Uint8Array(chunk.byteLength);
+        chunk.copyTo(buf);
+        this.onAudioChunk?.(buf, BigInt(chunk.timestamp));
+      },
+      error: (e) => console.warn(`[uzatuv] audio encoder xato: ${e.message}`),
+    });
+    enc.configure({
+      codec: "opus",
+      sampleRate,
+      numberOfChannels: channels,
+      bitrate: 128000,
+    });
+    this.audioEncoder = enc;
+
+    const proc = new MediaStreamTrackProcessor<AudioData>({ track });
+    this.audioReader = proc.readable.getReader();
+    void this.pumpAudio();
+  }
+
+  private async pumpAudio(): Promise<void> {
+    const reader = this.audioReader;
+    if (!reader) return;
+    while (this.running) {
+      const { value: frame, done } = await reader.read();
+      if (done || !frame) break;
+      try {
+        if (this.audioEncoder && this.audioEncoder.state === "configured") {
+          this.audioEncoder.encode(frame);
+        }
+      } finally {
+        frame.close();
+      }
+    }
+  }
+
+  /** Ovozni vaqtincha o'chirish/yoqish (uzatishni to'xtatmasdan). */
+  setAudioMuted(muted: boolean): void {
+    this.audioMuted = muted;
   }
 
   /** Keyingi kadrni keyframe (IDR) qilib chiqarish (KEYFRAME_REQUEST'ga javoban). */
@@ -138,6 +202,18 @@ export class ScreenTransmitter {
       /* e'tiborsiz */
     }
     this.encoder = null;
+    try {
+      void this.audioReader?.cancel();
+    } catch {
+      /* e'tiborsiz */
+    }
+    this.audioReader = null;
+    try {
+      if (this.audioEncoder && this.audioEncoder.state !== "closed") this.audioEncoder.close();
+    } catch {
+      /* e'tiborsiz */
+    }
+    this.audioEncoder = null;
     this.stream?.getTracks().forEach((t) => t.stop());
     this.stream = null;
     this.frameCount = 0;

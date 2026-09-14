@@ -28,11 +28,13 @@ export function TransmitScreen({ onBack }: { onBack: () => void }): React.JSX.El
   const [error, setError] = useState<string | null>(null);
   const [receiverName, setReceiverName] = useState("");
   const [busy, setBusy] = useState(false);
-  const [audioOn, setAudioOn] = useState(false); // Ovoz — keyingi bosqichda faollashadi
+  const [audioOn, setAudioOn] = useState(false); // uzatishda tizim ovozini ham olish
+  const [muted, setMuted] = useState(false); // faol holatда ovozni vaqtincha o'chirish
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const txRef = useRef<ScreenTransmitter | null>(null);
   const startedRef = useRef(false);
+  const audioOnRef = useRef(false); // capture paytida joriy qiymat kerak (closure)
 
   const active = state !== "IDLE" && state !== "CLOSED";
 
@@ -57,9 +59,12 @@ export function TransmitScreen({ onBack }: { onBack: () => void }): React.JSX.El
         setError(reason === "ended" ? "Ekran ulashish to'xtatildi." : "Uzatishda xatolik yuz berdi.");
         stopAll();
       },
+      (data, ptsUs) =>
+        window.uzatuv.transmitAudio({ data: toArrayBuffer(data), ptsUs: ptsUs.toString() }),
+      (sampleRate, channels) => window.uzatuv.transmitAudioConfig(sampleRate, channels),
     );
     txRef.current = tx;
-    tx.start(cfg).catch((e: unknown) => {
+    tx.start(cfg, audioOnRef.current).catch((e: unknown) => {
       setError(uzError(e));
       stopAll();
     });
@@ -152,10 +157,22 @@ export function TransmitScreen({ onBack }: { onBack: () => void }): React.JSX.El
               className="mt-5 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-slate-100 outline-none focus:border-emerald-500"
             />
 
-            <label className="mt-4 flex cursor-not-allowed items-center gap-2 text-sm text-slate-500">
-              <input type="checkbox" checked={audioOn} disabled onChange={() => setAudioOn(!audioOn)} />
-              Ovoz bilan uzatish <span className="text-xs">(tez orada)</span>
+            <label className="mt-4 flex cursor-pointer items-center gap-2 text-sm text-slate-300">
+              <input
+                type="checkbox"
+                checked={audioOn}
+                onChange={(e) => {
+                  setAudioOn(e.target.checked);
+                  audioOnRef.current = e.target.checked;
+                }}
+              />
+              Ovoz bilan uzatish (tizim ovozi)
             </label>
+            {audioOn && (
+              <p className="mt-1 text-xs text-slate-500">
+                Ekran tanlash oynasида "Tizim ovozini ulashish"ni belgilang.
+              </p>
+            )}
 
             {error && <p className="mt-4 text-sm text-rose-400">{error}</p>}
 
@@ -185,12 +202,26 @@ export function TransmitScreen({ onBack }: { onBack: () => void }): React.JSX.El
 
             {error && <p className="mt-3 text-sm text-rose-400">{error}</p>}
 
-            <button
-              onClick={stopAll}
-              className="mt-5 rounded-lg bg-rose-600 px-6 py-2.5 font-semibold text-white hover:bg-rose-500"
-            >
-              To'xtatish
-            </button>
+            <div className="mt-5 flex items-center gap-3">
+              {audioOn && (
+                <button
+                  onClick={() => {
+                    const next = !muted;
+                    setMuted(next);
+                    txRef.current?.setAudioMuted(next);
+                  }}
+                  className="rounded-lg bg-slate-800 px-4 py-2.5 font-medium text-slate-200 hover:bg-slate-700"
+                >
+                  {muted ? "🔇 Ovoz o'chiq" : "🔊 Ovoz yoniq"}
+                </button>
+              )}
+              <button
+                onClick={stopAll}
+                className="rounded-lg bg-rose-600 px-6 py-2.5 font-semibold text-white hover:bg-rose-500"
+              >
+                To'xtatish
+              </button>
+            </div>
           </div>
         )}
       </main>

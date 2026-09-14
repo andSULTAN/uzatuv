@@ -250,3 +250,25 @@ object Video {
         return VideoPayload(pts, seq, payload.copyOfRange(HEADER_LEN, payload.size))
     }
 }
+// ---------------------------------------------------------------------------
+// Audio payload (mirror of src/audio.ts §5)
+// ---------------------------------------------------------------------------
+object Audio {
+    private const val HEADER_LEN = 8 // uint64 ptsUs
+
+    fun packAudioPayload(ptsUs: Long, data: ByteArray): ByteArray {
+        val out = ByteArray(HEADER_LEN + data.size)
+        ByteBuffer.wrap(out).order(ByteOrder.BIG_ENDIAN).putLong(ptsUs)
+        System.arraycopy(data, 0, out, HEADER_LEN, data.size)
+        return out
+    }
+
+    data class AudioPayload(val ptsUs: Long, val data: ByteArray)
+
+    fun unpackAudioPayload(payload: ByteArray): AudioPayload {
+        require(payload.size >= HEADER_LEN) { "audio payload too short" }
+        val bb = ByteBuffer.wrap(payload).order(ByteOrder.BIG_ENDIAN)
+        val pts = bb.long
+        return AudioPayload(pts, payload.copyOfRange(HEADER_LEN, payload.size))
+    }
+}

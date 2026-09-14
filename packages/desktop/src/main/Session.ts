@@ -21,6 +21,7 @@ import {
   timingSafeEqual,
   generateNonce,
   unpackVideoPayload,
+  unpackAudioPayload,
   CHANNEL,
   FLAG,
   CODEC,
@@ -48,7 +49,14 @@ export interface VideoChunk {
   config?: Uint8Array;
 }
 
+/** Renderer'ga uzatiladigan bitta audio kadr (Opus). */
+export interface AudioChunk {
+  data: Uint8Array;
+  ptsUs: bigint;
+}
+
 type VideoCb = (chunk: VideoChunk) => void;
+type AudioCb = (chunk: AudioChunk) => void;
 type ControlCb = (m: ControlMessage) => void;
 type StateCb = (s: ConnState) => void;
 type CloseCb = () => void;
@@ -119,6 +127,7 @@ export class Session {
   private currentBitrateKbps = 8000;
 
   private readonly videoCbs: VideoCb[] = [];
+  private readonly audioCbs: AudioCb[] = [];
   private readonly controlCbs: ControlCb[] = [];
   private readonly stateCbs: StateCb[] = [];
   private readonly closeCbs: CloseCb[] = [];
@@ -139,6 +148,9 @@ export class Session {
 
   onVideo(cb: VideoCb): void {
     this.videoCbs.push(cb);
+  }
+  onAudio(cb: AudioCb): void {
+    this.audioCbs.push(cb);
   }
   onControl(cb: ControlCb): void {
     this.controlCbs.push(cb);
@@ -202,6 +214,9 @@ export class Session {
         break;
       case CHANNEL.VIDEO:
         this.handleVideo(inner.flags, inner.payload);
+        break;
+      case CHANNEL.AUDIO:
+        this.handleAudio(inner.payload);
         break;
       default:
         // Noma'lum kanal (masalan AUDIO=2 rezerv) → e'tiborsiz (forward-compat).
@@ -373,6 +388,11 @@ export class Session {
       this.configDirty = false;
     }
     for (const cb of this.videoCbs) cb(chunk);
+  }
+
+  private handleAudio(payload: Uint8Array): void {
+    const { ptsUs, data } = unpackAudioPayload(payload);
+    for (const cb of this.audioCbs) cb({ data, ptsUs });
   }
 
   /** RTT'ga qarab bitrate'ni moslaydi va sezilarli o'zgarishda SET_BITRATE yuboradi. */

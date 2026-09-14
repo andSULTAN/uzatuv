@@ -16,6 +16,8 @@ object MirrorState {
         val active: Boolean = false,     // service ishlayaptimi
         val conn: ConnState = ConnState.CLOSED,
         val peerName: String = "",       // ulangan PC nomi
+        val audioEnabled: Boolean = false, // ovoz bilan uzatilyaptimi
+        val audioMuted: Boolean = false,   // ovoz vaqtincha o'chirilganmi
     )
 
     private val _state = MutableStateFlow(UiState())
@@ -27,6 +29,14 @@ object MirrorState {
 
     fun updatePeerName(name: String) {
         _state.value = _state.value.copy(peerName = name)
+    }
+
+    fun updateAudioEnabled(enabled: Boolean) {
+        _state.value = _state.value.copy(audioEnabled = enabled)
+    }
+
+    fun updateAudioMuted(muted: Boolean) {
+        _state.value = _state.value.copy(audioMuted = muted)
     }
 
     fun setActive(active: Boolean) {

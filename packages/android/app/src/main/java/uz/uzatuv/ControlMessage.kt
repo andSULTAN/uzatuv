@@ -34,6 +34,15 @@ sealed class ControlMessage {
         override val type get() = "CODEC_CONFIG"
     }
 
+    // Audio format (Opus) — uzatuvchi ovoz boshlanishida yuboradi
+    data class AudioConfig(
+        val codec: String,
+        val sampleRate: Int,
+        val channels: Int,
+    ) : ControlMessage() {
+        override val type get() = "AUDIO_CONFIG"
+    }
+
     data object Start : ControlMessage() {
         override val type get() = "START"
     }
@@ -113,6 +122,11 @@ object ControlCodec {
                 .put("height", msg.height)
                 .put("csd", msg.csdBase64)
 
+            is ControlMessage.AudioConfig -> o
+                .put("codec", msg.codec)
+                .put("sampleRate", msg.sampleRate)
+                .put("channels", msg.channels)
+
             is ControlMessage.SetBitrate -> o.put("bitrateKbps", msg.bitrateKbps)
 
             is ControlMessage.Resize -> o
@@ -158,6 +172,11 @@ object ControlCodec {
                 width = o.optInt("width", 0),
                 height = o.optInt("height", 0),
                 csdBase64 = o.optString("csd", ""),
+            )
+            "AUDIO_CONFIG" -> ControlMessage.AudioConfig(
+                codec = o.optString("codec", "opus"),
+                sampleRate = o.optInt("sampleRate", 48000),
+                channels = o.optInt("channels", 2),
             )
             "START" -> ControlMessage.Start
             "STOP" -> ControlMessage.Stop

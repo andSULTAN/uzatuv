@@ -215,6 +215,28 @@ Foydalanuvchi real qurilmada sinadi — 5 ta nosozlik. Tuzatilganlari:
 
 ---
 
+## 2026-09-14 — 3-bosqich: OVOZ (audio, kanal 2) (PM)
+
+**Talab:** ikki yo'nalishда ovoz + yoqish/o'chirish toggle. Kodek: **Opus** (realtime).
+
+**Protokol:** `audio.ts` + Kotlin `Audio` (packAudioPayload/unpack, kanal 2 = `[uint64 ptsUs][opus]`). `AUDIO_CONFIG` control xabari (codec/sampleRate/channels) — uzatuvchi ovoz boshlanishida yuboradi. Protokol testi 10/10.
+
+**Desktop (ikki yo'nalish):**
+- Uzatish: `ScreenTransmitter` getDisplayMedia({audio}) + WebCodecs `AudioEncoder` (Opus 128kbps) → IPC → `ClientSession.sendAudio` (kanal 2). Runtime mute (setAudioMuted).
+- Qabul: `Session` kanal 2 → IPC → `AudioPlayer` (WebCodecs `AudioDecoder` + Web Audio). `autoplayPolicy` qo'shildi.
+- UI: `TransmitScreen` "Ovoz bilan uzatish" checkbox (yoqildi) + faol holatда 🔊/🔇 toggle.
+
+**Android (ikki yo'nalish):**
+- Uzatish (API 29+): `AudioCaptureEncoder` — MediaProjection AudioPlaybackCapture → AudioRecord → MediaCodec Opus → `transport.sendAudio`. `MirrorController` audio'ni boshqaradi + mute. RECORD_AUDIO + FGS "microphone" turi.
+- Qabul: `AudioDecoderPlayer` — MediaCodec Opus (OpusHead csd bilan) → AudioTrack. `ReceiverServer` kanal 2 + AUDIO_CONFIG.
+- UI: `ConnectScreen` "Ovoz bilan uzatish" checkbox; `StatusScreen` 🔊/🔇 toggle.
+
+**Tekshiruv:** protokol 10/10, desktop typecheck + 6 test exit 0, APK BUILD SUCCESSFUL.
+
+**Halol chegara:** ovoz REAL audio qurilmасiz sinalmadi (kod to'liq, kompilyatsiya toza). Ayniqsa cross-stack Opus (WebCodecs ↔ Android MediaCodec) real qurilmada tekshirilishi kerak. Android uzatish ovozi faqat API 29+ (eskiroqда video-only). Desktop tizim ovozini olish uchun ekran tanlashда "Tizim ovozini ulashish" belgilanishi kerak.
+
+---
+
 ## Shablon (keyingi yozuvlar uchun)
 
 ```

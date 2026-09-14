@@ -26,6 +26,7 @@ import {
   makeSecureChannels,
   generateNonce,
   packVideoPayload,
+  packAudioPayload,
   CHANNEL,
   FLAG,
   PROTOCOL_VERSION,
@@ -116,6 +117,18 @@ export class ClientSession {
   /** CODEC_CONFIG (SPS/PPS) — agar encoder alohida bersa (annexb'da ixtiyoriy). */
   sendCodecConfig(codec: Codec, width: number, height: number, csd: Uint8Array): void {
     this.sendControl({ type: "CODEC_CONFIG", codec, width, height, csd: b64(csd) });
+  }
+
+  /** Audio format (Opus) — ovoz boshlanishida bir marta. */
+  sendAudioConfig(sampleRate: number, channels: number): void {
+    this.sendControl({ type: "AUDIO_CONFIG", codec: "opus", sampleRate, channels });
+  }
+
+  /** Encode qilingan audio kadr — kanal 2. Bufer to'lган bo'lsa tashlanadi. */
+  sendAudio(ptsUs: bigint, data: Uint8Array): void {
+    if (!this.ready || !this.secure || !this.socket) return;
+    if (this.socket.writableLength > MAX_SEND_BUFFER) return;
+    this.writeSecure(CHANNEL.AUDIO, 0, packAudioPayload(ptsUs, data));
   }
 
   sendControl(m: ControlMessage): void {

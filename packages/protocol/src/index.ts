@@ -9,3 +9,4 @@ export * from "./framing";
 export * from "./crypto";
 export * from "./pairing";
 export * from "./video";
+export * from "./audio";

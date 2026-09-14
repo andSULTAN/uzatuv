@@ -15,6 +15,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -38,6 +39,7 @@ fun StatusScreen(
     showRememberOffer: Boolean = false,
     onRemember: () -> Unit = {},
     onDismissRemember: () -> Unit = {},
+    onToggleMute: () -> Unit = {},
 ) {
     val (label, color) = when (ui.conn) {
         ConnState.CONNECTING -> "Ulanmoqda…" to Color(0xFFF5A623)
@@ -91,6 +93,14 @@ fun StatusScreen(
                         Button(onClick = onRemember) { Text("Ha, eslab qol") }
                     }
                 }
+            }
+        }
+
+        // Ovoz yoqilgan bo'lsa — vaqtincha o'chirish/yoqish
+        if (ui.audioEnabled) {
+            Spacer(Modifier.padding(16.dp))
+            OutlinedButton(onClick = onToggleMute, modifier = Modifier.widthIn(min = 220.dp)) {
+                Text(if (ui.audioMuted) "🔇 Ovoz o'chiq — yoqish" else "🔊 Ovoz yoniq — o'chirish")
             }
         }
 

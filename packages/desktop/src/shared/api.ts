@@ -3,7 +3,16 @@
  * qiladi; renderer faqat `import type` bilan ishlatadi.
  */
 
-import type { PairingView, SessionView, VideoChunkIpc, TransmitChunkIpc, TransmitStartResult } from "./ipc";
+import type {
+  PairingView,
+  SessionView,
+  VideoChunkIpc,
+  TransmitChunkIpc,
+  TransmitStartResult,
+  AudioChunkIpc,
+  AudioConfigIpc,
+  TransmitAudioIpc,
+} from "./ipc";
 import type { ControlMessage, ConnState } from "@uzatuv/protocol";
 
 export interface UzatuvApi {
@@ -32,4 +41,14 @@ export interface UzatuvApi {
   onTransmitState(cb: (state: ConnState) => void): () => void;
   /** Qabul qiluvchining control xabari (STREAM_CONFIG/KEYFRAME_REQUEST/SET_BITRATE). */
   onTransmitControl(cb: (msg: ControlMessage) => void): () => void;
+
+  // ---- Audio (kanal 2) ----
+  /** Qabul: audio format kelganda (dekoder sozlash). */
+  onAudioConfig(cb: (cfg: AudioConfigIpc) => void): () => void;
+  /** Qabul: audio kadr kelganda. */
+  onAudio(cb: (chunk: AudioChunkIpc) => void): () => void;
+  /** Uzatish: audio formatni e'lon qilish. */
+  transmitAudioConfig(sampleRate: number, channels: number): void;
+  /** Uzatish: encode qilingan audio kadr. */
+  transmitAudio(chunk: TransmitAudioIpc): void;
 }

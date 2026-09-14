@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -58,6 +59,8 @@ fun ConnectScreen(
     savedDevices: List<PairingInfo> = emptyList(),
     onConnectSaved: (PairingInfo) -> Unit = {},
     onForgetSaved: (PairingInfo) -> Unit = {},
+    audioEnabled: Boolean = false,
+    onAudioToggle: (Boolean) -> Unit = {},
 ) {
     val context = LocalContext.current
     var mode by remember { mutableStateOf(Mode.QR) }
@@ -188,7 +191,14 @@ fun ConnectScreen(
             )
         }
 
-        Spacer(Modifier.padding(16.dp))
+        // Ovoz bilan uzatish (tizim ovozi — Android 10+)
+        Spacer(Modifier.padding(10.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Checkbox(checked = audioEnabled, onCheckedChange = onAudioToggle)
+            Text("Ovoz bilan uzatish (Android 10+)")
+        }
+
+        Spacer(Modifier.padding(10.dp))
         OutlinedButton(onClick = onOpenUsb, modifier = Modifier.widthIn(min = 220.dp)) {
             Text("USB orqali ulash yo'riqnomasi")
         }

@@ -22,6 +22,7 @@ import uz.uzatuv.MirrorController
 import uz.uzatuv.MirrorState
 import uz.uzatuv.PairingInfo
 import uz.uzatuv.R
+import uz.uzatuv.capture.AudioCaptureEncoder
 import uz.uzatuv.capture.ScreenCaptureEncoder
 import uz.uzatuv.protocol.Proto
 import uz.uzatuv.transport.TransportClientImpl
@@ -48,6 +49,7 @@ class MediaProjectionService : Service() {
 
         const val ACTION_START = "uz.uzatuv.action.START"
         const val ACTION_STOP = "uz.uzatuv.action.STOP"
+        const val ACTION_SET_MUTED = "uz.uzatuv.action.SET_MUTED"
 
         private const val EX_RESULT_CODE = "resultCode"
         private const val EX_RESULT_DATA = "resultData"
@@ -57,13 +59,16 @@ class MediaProjectionService : Service() {
         private const val EX_NAME = "name"
         private const val EX_VERSION = "version"
         private const val EX_KEY_B64 = "keyB64"
+        private const val EX_AUDIO = "audio"
+        private const val EX_MUTED = "muted"
 
-        /** START intent'ini yig'adi (MediaProjection ruxsati + pairing bilan). */
+        /** START intent'ini yig'adi (MediaProjection ruxsati + pairing + ovoz bilanmi). */
         fun startIntent(
             ctx: Context,
             resultCode: Int,
             resultData: Intent,
             pairing: PairingInfo,
+            withAudio: Boolean,
         ): Intent = Intent(ctx, MediaProjectionService::class.java).apply {
             action = ACTION_START
             putExtra(EX_RESULT_CODE, resultCode)
@@ -74,10 +79,18 @@ class MediaProjectionService : Service() {
             putExtra(EX_NAME, pairing.name)
             putExtra(EX_VERSION, pairing.version)
             putExtra(EX_KEY_B64, Base64.encodeToString(pairing.sessionKey, Base64.NO_WRAP))
+            putExtra(EX_AUDIO, withAudio)
         }
 
         fun stopIntent(ctx: Context): Intent =
             Intent(ctx, MediaProjectionService::class.java).apply { action = ACTION_STOP }
+
+        /** Ovozni yoqish/o'chirish intent'i (faol uzatish davomida). */
+        fun setMutedIntent(ctx: Context, muted: Boolean): Intent =
+            Intent(ctx, MediaProjectionService::class.java).apply {
+                action = ACTION_SET_MUTED
+                putExtra(EX_MUTED, muted)
+            }
     }
 
     private var mediaProjection: MediaProjection? = null
@@ -90,6 +103,11 @@ class MediaProjectionService : Service() {
         when (intent?.action) {
             ACTION_STOP -> { stopMirroring("user_stopped"); return START_NOT_STICKY }
             ACTION_START -> handleStart(intent)
+            ACTION_SET_MUTED -> {
+                val muted = intent.getBooleanExtra(EX_MUTED, false)
+                controller?.setAudioMuted(muted)
+                MirrorState.updateAudioMuted(muted)
+            }
             else -> stopSelf()
         }
         return START_NOT_STICKY
@@ -128,12 +146,22 @@ class MediaProjectionService : Service() {
         val metrics = screenMetrics()
         val device = buildDeviceInfo(metrics)
 
-        // 5) Encoder + Transport + Controller
+        // 5) Encoder + Transport + Controller (+ ovoz, agar yoqilgan va API 29+)
+        val withAudio = intent.getBooleanExtra(EX_AUDIO, false)
         val enc = ScreenCaptureEncoder(mp, metrics.widthPixels, metrics.heightPixels, metrics.densityDpi)
         val transport = TransportClientImpl(device)
-        val ctrl = MirrorController(transport, enc, device, metrics.widthPixels, metrics.heightPixels)
+        val audioEnc =
+            if (withAudio && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                AudioCaptureEncoder(mp)
+            } else {
+                null
+            }
+        val ctrl = MirrorController(
+            transport, enc, device, metrics.widthPixels, metrics.heightPixels, audioEnc,
+        )
         encoder = enc
         controller = ctrl
+        MirrorState.updateAudioEnabled(withAudio)
 
         MirrorState.setActive(true)
         ctrl.start(pairing)

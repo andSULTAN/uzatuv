@@ -32,6 +32,16 @@ export const IPC = {
   TRANSMIT_STATE: "uzatuv:transmit-state",
   /** main → renderer: qabul qiluvchining control xabari (STREAM_CONFIG/KEYFRAME_REQUEST/SET_BITRATE) */
   TRANSMIT_CONTROL: "uzatuv:transmit-control",
+
+  // ---- Audio (kanal 2) ----
+  /** main → renderer: qabul qilingan audio kadr (Opus) */
+  AUDIO: "uzatuv:audio",
+  /** main → renderer: audio format (AUDIO_CONFIG) */
+  AUDIO_CONFIG: "uzatuv:audio-config",
+  /** renderer → main: uzatish uchun audio format */
+  TRANSMIT_AUDIO_CONFIG: "uzatuv:transmit-audio-config",
+  /** renderer → main: uzatish uchun encode qilingan audio kadr */
+  TRANSMIT_AUDIO: "uzatuv:transmit-audio",
 } as const;
 
 /** Bitta ulanish nuqtasi (WiFi yoki USB tethering interfeysi). */
@@ -89,6 +99,26 @@ export interface TransmitChunkIpc {
   /** presentation timestamp (µs) — string (BigInt IPC muammosidan qochish) */
   ptsUs: string;
   isKeyframe: boolean;
+}
+
+/** Qabul qilingan audio kadr (Opus) — main'dan renderer'ga. */
+export interface AudioChunkIpc {
+  deviceId: string;
+  ptsUs: string;
+  data: ArrayBuffer;
+}
+
+/** Audio format — main'dan renderer'ga (dekoder sozlash uchun). */
+export interface AudioConfigIpc {
+  deviceId: string;
+  sampleRate: number;
+  channels: number;
+}
+
+/** UZATISH: renderer'dan main'ga encode qilingan audio kadr. */
+export interface TransmitAudioIpc {
+  ptsUs: string;
+  data: ArrayBuffer;
 }
 
 /** UZATISH: boshlash natijasi (havola to'g'rimi). */

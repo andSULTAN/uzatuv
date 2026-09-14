@@ -5,6 +5,7 @@ import android.util.Log
 import android.view.Surface
 import org.json.JSONArray
 import org.json.JSONObject
+import uz.uzatuv.protocol.Audio
 import uz.uzatuv.protocol.Crypto
 import uz.uzatuv.protocol.FrameParser
 import uz.uzatuv.protocol.Framing
@@ -113,6 +114,7 @@ class ReceiverServer(
         private var sendCh: Crypto.SecureChannel? = null
         private var out: OutputStream? = null
         private var decoder: VideoDecoder? = null
+        private var audioPlayer: AudioDecoderPlayer? = null
         private var lastConfig: ByteArray? = null
         private var mime = "video/avc"
         // Kadr yo'qolishini aniqlash (seq sakrasa → keyframe so'raymiz).
@@ -215,7 +217,8 @@ class ReceiverServer(
                         when (inner.channel) {
                             Proto.CH_CONTROL -> handleControl(JSONObject(String(inner.payload, Charsets.UTF_8)))
                             Proto.CH_VIDEO -> handleVideo(inner.flags, inner.payload)
-                            else -> { /* AUDIO=2 rezerv / noma'lum — e'tiborsiz */ }
+                            Proto.CH_AUDIO -> handleAudio(inner.payload)
+                            else -> { /* noma'lum — e'tiborsiz */ }
                         }
                     }
                 }
@@ -232,6 +235,11 @@ class ReceiverServer(
                     val csd = Base64.decode(o.optString("csd"), Base64.NO_WRAP)
                     lastConfig = csd
                     decoder?.setConfig(csd)
+                }
+                "AUDIO_CONFIG" -> {
+                    val sr = o.optInt("sampleRate", 48000)
+                    val ch = o.optInt("channels", 2)
+                    audioPlayer = AudioDecoderPlayer().also { it.configure(sr, ch) }
                 }
                 "PING" -> sendControl(
                     JSONObject().put("type", "PONG").put("seq", o.optInt("seq"))
@@ -261,6 +269,11 @@ class ReceiverServer(
                 decoder = VideoDecoder(s, mime).also { d -> lastConfig?.let { d.setConfig(it) } }
             }
             decoder?.decode(vp.au, vp.ptsUs, isKey)
+        }
+
+        private fun handleAudio(payload: ByteArray) {
+            val ap = Audio.unpackAudioPayload(payload)
+            audioPlayer?.decode(ap.data, ap.ptsUs)
         }
 
         private fun startPing() {
@@ -304,6 +317,8 @@ class ReceiverServer(
             pingThread?.interrupt()
             decoder?.release()
             decoder = null
+            audioPlayer?.release()
+            audioPlayer = null
             try {
                 sock.close()
             } catch (_: Exception) {

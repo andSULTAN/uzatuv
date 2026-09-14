@@ -55,22 +55,23 @@ class MainActivity : ComponentActivity() {
     private fun AppRoot() {
         val ui by MirrorState.state.collectAsState()
         var route by remember { mutableStateOf(Route.HOME) }
-        var pending by remember { mutableStateOf<PairingInfo?>(null) }
+        var pending by remember { mutableStateOf<Pair<PairingInfo, Boolean>?>(null) }
         // Joriy ulanish (eslab qolish taklifi uchun) + saqlangan qurilmalar ro'yxati
         var current by remember { mutableStateOf<PairingInfo?>(null) }
         var saved by remember { mutableStateOf(SavedDevices.list(this)) }
         var rememberDismissed by remember { mutableStateOf(false) }
+        var audioEnabled by remember { mutableStateOf(false) } // ovoz bilan uzatish
 
         // MediaProjection ruxsat natijasi → service'ni foreground'da boshlaymiz
         val projectionLauncher = rememberLauncherForActivityResult(
             ActivityResultContracts.StartActivityForResult(),
         ) { result ->
-            val p = pending
+            val ps = pending
             val data = result.data
-            if (result.resultCode == RESULT_OK && data != null && p != null) {
+            if (result.resultCode == RESULT_OK && data != null && ps != null) {
                 ContextCompat.startForegroundService(
                     this,
-                    MediaProjectionService.startIntent(this, result.resultCode, data, p),
+                    MediaProjectionService.startIntent(this, result.resultCode, data, ps.first, ps.second),
                 )
             }
             pending = null
@@ -81,23 +82,29 @@ class MainActivity : ComponentActivity() {
             projectionLauncher.launch(mpm.createScreenCaptureIntent())
         }
 
-        // Bildirishnoma ruxsati (Android 13+) natijasi — keyin ekran ruxsatini so'raymiz
-        val notifLauncher = rememberLauncherForActivityResult(
-            ActivityResultContracts.RequestPermission(),
+        // Bildirishnoma + (kerak bo'lsa) mikrofon ruxsati → keyin ekran ruxsati
+        val permsLauncher = rememberLauncherForActivityResult(
+            ActivityResultContracts.RequestMultiplePermissions(),
         ) { _ -> launchProjection() }
 
         fun beginStart(p: PairingInfo) {
             current = p
             rememberDismissed = false
-            pending = p
+            pending = p to audioEnabled
+            val need = mutableListOf<String>()
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
                 ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) !=
                 PackageManager.PERMISSION_GRANTED
             ) {
-                notifLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-            } else {
-                launchProjection()
+                need += Manifest.permission.POST_NOTIFICATIONS
             }
+            if (audioEnabled &&
+                ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) !=
+                PackageManager.PERMISSION_GRANTED
+            ) {
+                need += Manifest.permission.RECORD_AUDIO
+            }
+            if (need.isEmpty()) launchProjection() else permsLauncher.launch(need.toTypedArray())
         }
 
         when {
@@ -114,6 +121,9 @@ class MainActivity : ComponentActivity() {
                         cur?.let { SavedDevices.save(this, it); saved = SavedDevices.list(this) }
                     },
                     onDismissRemember = { rememberDismissed = true },
+                    onToggleMute = {
+                        startService(MediaProjectionService.setMutedIntent(this, !ui.audioMuted))
+                    },
                 )
             }
 
@@ -128,6 +138,8 @@ class MainActivity : ComponentActivity() {
                 savedDevices = saved,
                 onConnectSaved = { beginStart(it) },
                 onForgetSaved = { SavedDevices.remove(this, it.serverId); saved = SavedDevices.list(this) },
+                audioEnabled = audioEnabled,
+                onAudioToggle = { audioEnabled = it },
             )
 
             else -> HomeScreen(

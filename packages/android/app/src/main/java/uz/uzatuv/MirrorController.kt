@@ -1,7 +1,9 @@
 package uz.uzatuv
 
+import android.os.Build
 import android.util.Base64
 import android.util.Log
+import uz.uzatuv.capture.AudioCaptureEncoder
 import uz.uzatuv.protocol.Proto
 import kotlin.math.min
 
@@ -26,6 +28,8 @@ class MirrorController(
     private val device: DeviceInfo,
     initialSourceWidth: Int,
     initialSourceHeight: Int,
+    /** Ovoz uzatish (API 29+). null bo'lsa faqat video. */
+    private val audioEncoder: AudioCaptureEncoder? = null,
 ) {
     private companion object { const val TAG = "UzatuvController" }
 
@@ -35,6 +39,8 @@ class MirrorController(
     private var chosenCodec = Proto.CODEC_H264
     private var currentConfig: EncoderConfig? = null
     private var encoderRunning = false
+    private var audioStarted = false
+    @Volatile private var audioMuted = false
 
     fun start(pairing: PairingInfo) {
         transport.onStateChange { state ->
@@ -83,6 +89,27 @@ class MirrorController(
         if (encoderRunning) encoder.stop()
         encoder.start(cfg) { frame -> onEncodedFrame(cfg, frame) }
         encoderRunning = true
+        startAudioIfNeeded()
+    }
+
+    /** Ovoz uzatishни boshlaydi (API 29+, qo'llab-quvvatlanса). Bir marta. */
+    private fun startAudioIfNeeded() {
+        if (audioStarted) return
+        val ae = audioEncoder ?: return
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
+        if (!ae.isSupported()) {
+            Log.w(TAG, "Opus encoder yo'q — ovozsiz uzatiladi")
+            return
+        }
+        audioStarted = true
+        transport.sendAudioConfig(AudioCaptureEncoder.SAMPLE_RATE, AudioCaptureEncoder.CHANNELS)
+        ae.start { data, pts -> if (!audioMuted) transport.sendAudio(pts, data) }
+        Log.i(TAG, "Ovoz uzatish boshlandi")
+    }
+
+    /** Ovozni vaqtincha o'chirish/yoqish. */
+    fun setAudioMuted(muted: Boolean) {
+        audioMuted = muted
     }
 
     private fun onEncodedFrame(cfg: EncoderConfig, frame: EncodedFrame) {
@@ -113,6 +140,8 @@ class MirrorController(
     fun stop(reason: String) {
         encoder.stop()
         encoderRunning = false
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) audioEncoder?.stop()
+        audioStarted = false
         transport.disconnect(reason)
     }
 

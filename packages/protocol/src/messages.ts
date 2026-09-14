@@ -75,6 +75,14 @@ export interface CodecConfig {
   csd: string;
 }
 
+/** Audio oqim formati — uzatuvchi ovoz boshlanishida yuboradi (kanal 2). */
+export interface AudioConfig {
+  type: "AUDIO_CONFIG";
+  codec: "opus";
+  sampleRate: number; // masalan 48000
+  channels: number; // 1 | 2
+}
+
 export interface Start {
   type: "START";
 }
@@ -151,6 +159,7 @@ export type ControlMessage =
   | ServerReady
   | StreamConfig
   | CodecConfig
+  | AudioConfig
   | Start
   | Stop
   | KeyframeRequest

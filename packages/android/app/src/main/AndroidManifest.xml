@@ -12,6 +12,10 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
 
+    <!-- Ovoz uzatish: tizim ovozini olish (AudioPlaybackCapture, Android 10+) -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+
     <!-- Android 13+ da bildirishnoma ko'rsatish uchun -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
@@ -51,7 +55,7 @@
         <service
             android:name=".service.MediaProjectionService"
             android:exported="false"
-            android:foregroundServiceType="mediaProjection" />
+            android:foregroundServiceType="mediaProjection|microphone" />
 
     </application>
 </manifest>

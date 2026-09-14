@@ -3,6 +3,8 @@ import type { SessionView } from "../../../shared/ipc";
 import { VideoRenderer } from "../VideoRenderer";
 import type { DecodedChunk } from "../VideoRenderer";
 import { subscribeVideo } from "../videoBus";
+import { AudioPlayer } from "../AudioPlayer";
+import { subscribeAudio } from "../audioBus";
 import { StatusBadge } from "./StatusBadge";
 
 interface Stats {
@@ -53,6 +55,13 @@ export function DeviceView({
       renderer.decode(decoded);
     });
 
+    // Audio (Opus) — kelsa chalinadi.
+    const audioPlayer = new AudioPlayer();
+    const unsubAudio = subscribeAudio(deviceId, {
+      onConfig: (cfg) => audioPlayer.configure(cfg.sampleRate, cfg.channels),
+      onChunk: (chunk) => audioPlayer.decode(new Uint8Array(chunk.data), BigInt(chunk.ptsUs)),
+    });
+
     // Placeholder animatsiyasi + statistika yangilash sikli.
     const loop = (): void => {
       const s = renderer.stats();
@@ -66,6 +75,8 @@ export function DeviceView({
     return () => {
       cancelAnimationFrame(raf);
       unsub();
+      unsubAudio();
+      audioPlayer.dispose();
       renderer.dispose();
     };
   }, [deviceId, session]);
